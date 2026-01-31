@@ -2,640 +2,384 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DIVIJA: SYSTEM REBOOT</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Divija's Game Archive</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,600&family=VT323&display=swap');
-
         :root {
-            --bg: #050505;
-            --heart: #ff3e3e;
-            --soul: #00f3ff;
-            --gold: #ffd700;
+            --bg-color: #050505;
+            --term-green: #c8c8c8; /* Greyish white for the retro feel */
+            --dim-grey: #555555;
+            --border-color: #ffffff;
+            --crt-scanline: rgba(18, 16, 16, 0.3);
+        }
+
+        * {
+            box-sizing: border-box;
+            cursor: default;
         }
 
         body {
             margin: 0;
-            background: #000;
-            height: 100vh;
-            width: 100vw;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--term-green);
             font-family: 'VT323', monospace;
+            height: 100vh;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             user-select: none;
-            -webkit-user-select: none;
-            color: white;
         }
 
-        /* --- CRT FRAME --- */
-        #crt-frame {
-            position: relative;
+        /* --- CRT EFFECT OVERLAY --- */
+        .crt-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.25) 50%
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 100;
+            animation: flicker 0.15s infinite;
+        }
+
+        .crt-overlay::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+            background-size: 100% 2px;
+            z-index: 2;
+        }
+
+        .vignette {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
-            max-width: 900px;
-            max-height: 650px;
-            background: #000;
-            border: 2px solid #222;
-            box-shadow: 0 0 50px rgba(0, 243, 255, 0.1);
-            overflow: hidden;
+            box-shadow: 0 0 150px rgba(0,0,0,0.9) inset;
+            pointer-events: none;
+            z-index: 101;
         }
 
-        canvas { display: block; width: 100%; height: 100%; }
+        /* --- MAIN CONTAINER --- */
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            height: 85vh;
+            border: 4px solid var(--border-color);
+            padding: 2rem;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+        }
 
-        /* --- UI OVERLAYS --- */
-        .scanlines {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
-                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            background-size: 100% 3px, 3px 100%; pointer-events: none; z-index: 10;
+        /* Decoration corners */
+        .container::after {
+            content: '';
+            position: absolute;
+            top: -4px; left: -4px; right: -4px; bottom: -4px;
+            border: 2px solid var(--bg-color);
+            pointer-events: none;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            border-bottom: 2px dashed var(--dim-grey);
+            padding-bottom: 1rem;
+        }
+
+        h1 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 4px 4px 0px var(--dim-grey);
+            margin: 0;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--dim-grey);
+            margin-top: 10px;
+        }
+
+        /* --- GAME GRID --- */
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        /* Custom Scrollbar */
+        .game-grid::-webkit-scrollbar {
+            width: 10px;
+        }
+        .game-grid::-webkit-scrollbar-track {
+            background: #111;
+        }
+        .game-grid::-webkit-scrollbar-thumb {
+            background: #fff;
+            border: 2px solid #000;
+        }
+
+        /* --- CARD DESIGN --- */
+        .game-card {
+            background: #111;
+            border: 2px solid var(--dim-grey);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.5rem;
+            text-decoration: none;
+            color: var(--term-green);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .game-card:hover {
+            border-color: var(--border-color);
+            transform: translateY(-5px);
+            background: #1a1a1a;
+            box-shadow: 8px 8px 0px var(--dim-grey);
+        }
+
+        /* The Soul (Heart) Icon - Hidden by default */
+        .soul-icon {
+            position: absolute;
+            top: 50%;
+            left: 10px;
+            transform: translateY(-50%);
+            width: 20px;
+            opacity: 0;
+            transition: opacity 0.1s;
         }
         
-        .ui-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 20; padding: 20px; box-sizing: border-box;
-            display: flex; flex-direction: column; justify-content: space-between;
+        .game-card:hover .soul-icon {
+            opacity: 1;
+            animation: pulse 1s infinite;
         }
 
-        /* --- HUD --- */
-        #hud { opacity: 0; transition: opacity 1s; }
-        .bar-container { display: flex; align-items: center; margin-bottom: 8px; }
-        .bar-label { width: 70px; color: var(--gold); font-size: 20px; }
-        .bar-border { width: 150px; height: 12px; border: 2px solid white; background: #222; }
-        .bar-fill { height: 100%; transition: width 0.1s linear; }
-
-        /* --- DIALOGUE --- */
-        #dialogue-box {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            width: 90%; min-height: 160px;
-            background: rgba(0, 0, 0, 0.9); border: 2px solid white;
-            padding: 15px; display: none; box-sizing: border-box; pointer-events: auto;
-        }
-        .portrait {
-            width: 100px; height: 100px; border: 1px solid #444; float: left; margin-right: 15px;
-            background: #111; display: flex; justify-content: center; align-items: center;
-        }
-        .text-content {
-            margin-left: 120px; font-family: 'Cormorant Garamond', serif;
-            font-size: 26px; line-height: 1.2; white-space: pre-wrap; /* Fixes spacing */
-        }
-        .speaker { color: var(--soul); font-family: 'VT323'; font-size: 22px; margin-bottom: 5px; text-transform: uppercase; }
-        .next-btn { 
-            position: absolute; bottom: 10px; right: 15px; font-family: 'VT323'; 
-            color: #888; animation: blink 1s infinite; font-size: 18px; 
+        .svg-container {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 1rem;
+            filter: grayscale(100%);
         }
 
-        /* --- INTRO & SCREENS --- */
-        .fullscreen-text {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            background: #000; z-index: 50; transition: opacity 1s; pointer-events: auto;
+        /* SVG Styling */
+        .game-svg {
+            width: 100%;
+            height: 100%;
+            fill: none;
+            stroke: var(--term-green);
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            shape-rendering: geometricPrecision;
         }
-        .hidden { opacity: 0; pointer-events: none; }
         
-        h1 { font-size: 60px; color: var(--soul); margin: 0; text-shadow: 0 0 15px var(--soul); }
-        button {
-            margin-top: 30px; background: transparent; color: white; border: 2px solid white;
-            font-family: 'VT323'; font-size: 24px; padding: 10px 40px; cursor: pointer;
+        .game-card:hover .game-svg {
+            stroke: #fff;
+            stroke-width: 3;
+            filter: drop-shadow(0 0 5px rgba(255,255,255,0.5));
         }
 
-        /* --- MOBILE CONTROLS --- */
-        #touch-controls {
-            display: none; position: absolute; bottom: 20px; left: 0; width: 100%; height: 150px;
-            pointer-events: none; z-index: 100;
-        }
-        .dpad { position: absolute; bottom: 20px; left: 20px; width: 150px; height: 150px; pointer-events: auto; }
-        .action-pad { position: absolute; bottom: 20px; right: 20px; width: 120px; height: 120px; pointer-events: auto; }
-        
-        .touch-btn {
-            position: absolute; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3);
-            border-radius: 50%; backdrop-filter: blur(2px);
-        }
-        .touch-btn:active { background: rgba(255,255,255,0.4); }
-
-        /* DPAD Layout */
-        #btn-up { top: 0; left: 50px; width: 50px; height: 50px; }
-        #btn-down { bottom: 0; left: 50px; width: 50px; height: 50px; }
-        #btn-left { top: 50px; left: 0; width: 50px; height: 50px; }
-        #btn-right { top: 50px; right: 0; width: 50px; height: 50px; }
-        
-        /* Actions */
-        #btn-z { bottom: 10px; right: 70px; width: 60px; height: 60px; background: rgba(255, 62, 62, 0.2); }
-        #btn-x { bottom: 50px; right: 0; width: 50px; height: 50px; background: rgba(0, 243, 255, 0.2); }
-
-        /* Media Query for Mobile */
-        @media (max-width: 900px) {
-            #touch-controls { display: block; }
-            #game-cabinet { width: 100%; height: 100%; border: none; }
+        .game-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1rem;
+            text-align: center;
+            line-height: 1.5;
+            margin-bottom: 0.5rem;
         }
 
-        @keyframes blink { 50% { opacity: 0; } }
+        .game-desc {
+            font-size: 1.1rem;
+            text-align: center;
+            color: var(--dim-grey);
+        }
+
+        .game-card:hover .game-desc {
+            color: #aaa;
+        }
+
+        .status-bar {
+            margin-top: auto;
+            border-top: 2px solid var(--dim-grey);
+            padding-top: 1rem;
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.2rem;
+        }
+
+        /* --- ANIMATIONS --- */
+        @keyframes flicker {
+            0% { opacity: 0.27861; }
+            5% { opacity: 0.34769; }
+            10% { opacity: 0.23604; }
+            15% { opacity: 0.90626; }
+            20% { opacity: 0.18128; }
+            25% { opacity: 0.83891; }
+            30% { opacity: 0.65583; }
+            35% { opacity: 0.67807; }
+            40% { opacity: 0.26559; }
+            45% { opacity: 0.84693; }
+            50% { opacity: 0.96019; }
+            55% { opacity: 0.08594; }
+            60% { opacity: 0.20313; }
+            65% { opacity: 0.71988; }
+            70% { opacity: 0.53455; }
+            75% { opacity: 0.37288; }
+            80% { opacity: 0.71428; }
+            85% { opacity: 0.70419; }
+            90% { opacity: 0.7003; }
+            95% { opacity: 0.36108; }
+            100% { opacity: 0.24387; }
+        }
+
+        @keyframes pulse {
+            0% { transform: translateY(-50%) scale(1); }
+            50% { transform: translateY(-50%) scale(1.2); }
+            100% { transform: translateY(-50%) scale(1); }
+        }
+
+        /* Pixel art heart svg */
+        .heart-path {
+            fill: #fff;
+            stroke: none;
+        }
+
     </style>
 </head>
 <body>
 
-<div id="crt-frame">
-    <canvas id="canvas"></canvas>
-    <div class="scanlines"></div>
+    <div class="crt-overlay"></div>
+    <div class="vignette"></div>
 
-    <!-- TOUCH CONTROLS (Mobile Only) -->
-    <div id="touch-controls">
-        <div class="dpad">
-            <div id="btn-up" class="touch-btn"></div>
-            <div id="btn-down" class="touch-btn"></div>
-            <div id="btn-left" class="touch-btn"></div>
-            <div id="btn-right" class="touch-btn"></div>
-        </div>
-        <div class="action-pad">
-            <div id="btn-z" class="touch-btn"></div> <!-- Shoot / Talk -->
-            <div id="btn-x" class="touch-btn"></div> <!-- Bomb -->
-        </div>
-    </div>
+    <div class="container">
+        <header>
+            <h1>Divija's Game Archive</h1>
+            <div class="subtitle">EST. 202X // SYSTEM READY</div>
+        </header>
 
-    <!-- UI LAYER -->
-    <div class="ui-layer">
-        <div id="hud">
-            <div class="bar-container">
-                <span class="bar-label">HP</span>
-                <div class="bar-border"><div class="bar-fill" id="hp-bar" style="background:var(--heart); width:100%"></div></div>
-            </div>
-            <div class="bar-container">
-                <span class="bar-label">MP</span>
-                <div class="bar-border"><div class="bar-fill" id="mp-bar" style="background:var(--soul); width:0%"></div></div>
-            </div>
-        </div>
-
-        <div id="dialogue-box">
-            <div class="portrait"><canvas id="p-canvas" width="100" height="100"></canvas></div>
-            <div class="text-content">
-                <div class="speaker" id="speaker-name">UNKNOWN</div>
-                <div id="dialogue-text"></div>
-            </div>
-            <div class="next-btn">[Z] CONTINUE</div>
-        </div>
-    </div>
-
-    <!-- SCREENS -->
-    <div id="intro-screen" class="fullscreen-text">
-        <h1 style="font-size: 80px;">DIVIJA</h1>
-        <p style="color:#888; font-size: 24px; letter-spacing: 5px; margin-bottom: 40px;">CALCULUS OF THE HEART</p>
-        <button id="start-btn">BOOT SYSTEM</button>
-        <div style="margin-top: 20px; font-size: 16px; color: #666;">
-            [WASD / ARROWS] Move • [Z] Interact/Shoot • [X] Bomb
-        </div>
-    </div>
-
-    <div id="game-over" class="fullscreen-text hidden">
-        <h1 style="color:#666">SYSTEM FAILURE</h1>
-        <p>The heart stopped, but the memory remains.</p>
-        <button id="retry-btn">REBOOT</button>
-    </div>
-
-    <div id="victory-screen" class="fullscreen-text hidden">
-        <h1 style="color:var(--gold)">INTEGRATION COMPLETE</h1>
-        <div style="text-align: center; max-width: 600px; font-family: 'Cormorant Garamond'; font-size: 24px;">
-            <p>You have compiled the fragments of your soul.</p>
-            <p>You are whole.</p>
-            <br>
-            <p style="color: var(--heart); font-size: 30px;">Happy Birthday, Divija.</p>
-            <p>- Daddy</p>
-        </div>
-        <button onclick="location.reload()">SLEEP</button>
-    </div>
-</div>
-
-<script>
-/* 
-    ETHER_CORE v10 - The Masterpiece Edition
-    Features: 
-    - Vector Cinematic Engine
-    - Universal Input (Touch + Keyboard)
-    - Typewriter v2 (Space-Preserving)
-*/
-
-const CANVAS = document.getElementById('canvas');
-const CTX = CANVAS.getContext('2d');
-const P_CTX = document.getElementById('p-canvas').getContext('2d');
-
-let W = 900;
-let H = 650;
-
-function resize() {
-    W = CANVAS.width = CANVAS.offsetWidth;
-    H = CANVAS.height = CANVAS.offsetHeight;
-}
-window.addEventListener('resize', resize);
-resize();
-
-// --- INPUT SYSTEM ---
-const Input = {
-    keys: {},
-    touch: { up: false, down: false, left: false, right: false, z: false, x: false },
-    
-    init() {
-        // Keyboard
-        window.addEventListener('keydown', e => this.keys[e.code] = true);
-        window.addEventListener('keyup', e => {
-            this.keys[e.code] = false;
-            if(e.code === 'KeyZ' || e.code === 'Enter') Game.handleInteraction();
-        });
-
-        // Touch Mapping
-        const bind = (id, key) => {
-            const el = document.getElementById(id);
-            el.addEventListener('touchstart', (e) => { e.preventDefault(); this.touch[key] = true; });
-            el.addEventListener('touchend', (e) => { e.preventDefault(); this.touch[key] = false; });
-            // Add click for "Z" interaction on dialogue
-            if(key === 'z') {
-                el.addEventListener('touchstart', () => Game.handleInteraction());
-            }
-        };
-
-        bind('btn-up', 'up'); bind('btn-down', 'down');
-        bind('btn-left', 'left'); bind('btn-right', 'right');
-        bind('btn-z', 'z'); bind('btn-x', 'x');
-    },
-
-    isDown(action) {
-        if(action === 'up') return this.keys['ArrowUp'] || this.keys['KeyW'] || this.touch.up;
-        if(action === 'down') return this.keys['ArrowDown'] || this.keys['KeyS'] || this.touch.down;
-        if(action === 'left') return this.keys['ArrowLeft'] || this.keys['KeyA'] || this.touch.left;
-        if(action === 'right') return this.keys['ArrowRight'] || this.keys['KeyD'] || this.touch.right;
-        if(action === 'fire') return this.keys['KeyZ'] || this.keys['Enter'] || this.touch.z;
-        if(action === 'bomb') return this.keys['KeyX'] || this.keys['ShiftLeft'] || this.touch.x;
-        return false;
-    }
-};
-
-// --- AUDIO SYNTH (Procedural) ---
-const AudioMan = {
-    ctx: null,
-    init() { window.AudioContext = window.AudioContext || window.webkitAudioContext; this.ctx = new AudioContext(); },
-    play(freq, type, dur, vol=0.1) {
-        if(!this.ctx) return;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-        gain.gain.setValueAtTime(vol, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + dur);
-        osc.connect(gain); gain.connect(this.ctx.destination);
-        osc.start(); osc.stop(this.ctx.currentTime + dur);
-    },
-    sfx(id) {
-        if(id === 'text') this.play(800 + Math.random()*200, 'sine', 0.05, 0.02);
-        if(id === 'shoot') this.play(300, 'triangle', 0.1, 0.05);
-        if(id === 'hit') { this.play(100, 'sawtooth', 0.3, 0.2); Game.shake = 10; }
-        if(id === 'intro_fall') this.play(100 - (Game.tick%50), 'sawtooth', 0.1, 0.05);
-    }
-};
-
-// --- CINEMATIC ENGINE ---
-const Cinematic = {
-    active: false,
-    phase: 0,
-    timer: 0,
-    yPos: 0,
-    
-    start() {
-        this.active = true;
-        this.phase = 0;
-        this.timer = 0;
-        this.yPos = -100;
-        document.getElementById('intro-screen').classList.add('hidden');
-    },
-
-    update() {
-        this.timer++;
-        
-        // Phase 1: The Glitch Screen
-        if(this.phase === 0) {
-            if(this.timer > 120) { this.phase = 1; this.timer = 0; }
-        }
-        // Phase 2: The Fall
-        else if(this.phase === 1) {
-            this.yPos += 5;
-            if(this.timer % 10 === 0) AudioMan.sfx('intro_fall');
-            if(this.timer > 300) { this.phase = 2; this.timer = 0; }
-        }
-        // Phase 3: The Landing
-        else if(this.phase === 2) {
-            if(this.timer > 100) {
-                this.active = false;
-                Game.startScript();
-            }
-        }
-    },
-
-    draw(ctx) {
-        ctx.fillStyle = "#000";
-        ctx.fillRect(0,0,W,H);
-
-        if(this.phase === 0) {
-            // Glitching Desktop
-            ctx.fillStyle = "#fff";
-            ctx.font = "20px VT323";
-            ctx.fillText("SYSTEM CRITICAL. EJECTING SOUL...", 50, H/2);
-            if(Math.random() > 0.8) ctx.fillRect(0, Math.random()*H, W, 20);
-        }
-        else if(this.phase === 1) {
-            // Matrix falling effect
-            ctx.fillStyle = "rgba(0, 243, 255, 0.2)";
-            for(let i=0; i<20; i++) {
-                ctx.fillText(Math.random() > 0.5 ? "1" : "0", Math.random()*W, (this.timer*10 + Math.random()*500) % H);
-            }
+        <div class="game-grid">
             
-            // Falling Divija
-            const cx = W/2;
-            const cy = H/2;
-            ctx.save();
-            ctx.translate(cx, cy);
-            ctx.rotate(this.timer * 0.05);
-            ctx.fillStyle = "#ff3e3e";
-            ctx.beginPath();
-            ctx.arc(0, 0, 20, 0, Math.PI*2);
-            ctx.fill();
-            // Trailing hair/scarf
-            ctx.strokeStyle = "#ff3e3e";
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.moveTo(0,0);
-            ctx.bezierCurveTo(-50, -50, 50, -100, 0, -150);
-            ctx.stroke();
-            ctx.restore();
-        }
-        else if(this.phase === 2) {
-            // Fade to white then black
-            const alpha = 1 - (this.timer / 100);
-            ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-            ctx.fillRect(0,0,W,H);
-        }
-    }
-};
+            <!-- Game 1: Architect of Soul -->
+            <a href="D1.html" class="game-card">
+                <!-- Soul Icon Hover Effect -->
+                <svg class="soul-icon" viewBox="0 0 24 24">
+                    <path class="heart-path" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
 
-// --- GAME LOGIC ---
-const Game = {
-    state: 'MENU', // MENU, INTRO, DIALOGUE, COMBAT, OVER, WIN
-    tick: 0,
-    shake: 0,
-    player: { x: 0, y: 0, hp: 20, maxHp: 20, mp: 0, r: 8, inv: 0 },
-    boss: { active: false, x:0, y:0, hp: 500, max: 500, type: 'echo' },
-    bullets: [],
-    
-    script: [
-        { t:'text', s:'sys', txt:"INITIALIZING..." },
-        { t:'text', s:'sys', txt:"ERROR: User location unknown." },
-        { t:'text', s:'divija', txt:"Where... am I?" },
-        { t:'text', s:'divija', txt:"I was just looking at the screen, and then..." },
-        { t:'text', s:'echo', txt:"You fell. Just like you always do." },
-        { t:'text', s:'divija', txt:"Who said that?" },
-        { t:'text', s:'echo', txt:"I am the doubt in your chest. The 'what if'." },
-        { t:'combat', boss:'echo', hp:300 }, // Fight 1
-        { t:'text', s:'divija', txt:"I... I didn't run away." },
-        { t:'text', s:'echo', txt:"Not this time. But the Crowd is watching." },
-        { t:'combat', boss:'crowd', hp:400 }, // Fight 2
-        { t:'text', s:'crowd', txt:"She's trying too hard. Look at her." },
-        { t:'text', s:'divija', txt:"I'm not doing this for you!" },
-        { t:'text', s:'sys', txt:"WARNING: Chronological instability detected." },
-        { t:'combat', boss:'clock', hp:500 }, // Fight 3
-        { t:'text', s:'memory', txt:"Divija. Breathe." },
-        { t:'text', s:'divija', txt:"Dad? Is that you?" },
-        { t:'text', s:'memory', txt:"You are stronger than the noise. Come home." },
-        { t:'win' }
-    ],
-    sIdx: 0,
-    
-    // Typewriter Vars
-    textTimer: null,
-    currentStr: "",
-    charPos: 0,
-    waiting: false,
+                <div class="svg-container">
+                    <svg class="game-svg" viewBox="0 0 100 100">
+                        <!-- Abstract Temple/Pillar Structure -->
+                        <path d="M20 90 L80 90 L80 80 L90 80 L90 70 L80 70 L80 30 L90 30 L90 20 L80 20 L80 10 L60 10 L60 20 L40 20 L40 10 L20 10 L20 20 L10 20 L10 30 L20 30 L20 70 L10 70 L10 80 L20 80 Z" />
+                        <rect x="40" y="40" width="20" height="30" stroke="currentColor" fill="none"/>
+                        <circle cx="50" cy="30" r="4" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="game-title">ARCHITECT<br>OF SOUL</div>
+                <div class="game-desc">Build. Ascend. Define.</div>
+            </a>
 
-    init() {
-        Input.init();
-        this.loop();
-    },
+            <!-- Game 2: Echo -->
+            <a href="D2.html" class="game-card">
+                 <svg class="soul-icon" viewBox="0 0 24 24">
+                    <path class="heart-path" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+                <div class="svg-container">
+                    <svg class="game-svg" viewBox="0 0 100 100">
+                        <!-- Concentric Pixel Waves -->
+                        <path d="M50 50 m-5,0 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0" fill="currentColor"/>
+                        <path d="M50 50 m-15,0 a15,15 0 1,0 30,0 a15,15 0 1,0 -30,0" stroke-dasharray="4 4"/>
+                        <path d="M50 50 m-25,0 a25,25 0 1,0 50,0 a25,25 0 1,0 -50,0" />
+                        <path d="M50 50 m-35,0 a35,35 0 1,0 70,0 a35,35 0 1,0 -70,0" stroke-dasharray="8 8"/>
+                        <rect x="45" y="80" width="10" height="20" />
+                    </svg>
+                </div>
+                <div class="game-title">ECHO</div>
+                <div class="game-desc">The sound returns... eventually.</div>
+            </a>
 
-    startIntro() {
-        this.state = 'INTRO';
-        AudioMan.init();
-        Cinematic.start();
-    },
+            <!-- Game 3: Blaster -->
+            <a href="D3.html" class="game-card">
+                 <svg class="soul-icon" viewBox="0 0 24 24">
+                    <path class="heart-path" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+                <div class="svg-container">
+                    <svg class="game-svg" viewBox="0 0 100 100">
+                        <!-- Retro Spaceship / Crosshair -->
+                        <path d="M50 10 L60 30 L90 30 L70 50 L80 90 L50 70 L20 90 L30 50 L10 30 L40 30 Z" />
+                        <circle cx="50" cy="50" r="10" stroke="currentColor" fill="none"/>
+                        <line x1="50" y1="10" x2="50" y2="30" />
+                        <line x1="50" y1="70" x2="50" y2="90" />
+                    </svg>
+                </div>
+                <div class="game-title">BLASTER</div>
+                <div class="game-desc">Destroy. Dodge. Survive.</div>
+            </a>
 
-    startScript() {
-        this.state = 'DIALOGUE';
-        this.player.x = W/2; this.player.y = H - 100;
-        document.getElementById('hud').style.opacity = 1;
-        this.processStep();
-    },
+            <!-- Game 4: Shattered Reflection -->
+            <a href="D4.html" class="game-card">
+                 <svg class="soul-icon" viewBox="0 0 24 24">
+                    <path class="heart-path" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+                <div class="svg-container">
+                    <svg class="game-svg" viewBox="0 0 100 100">
+                        <!-- Broken Mirror Shards -->
+                        <path d="M10 10 L40 10 L30 40 L10 30 Z" />
+                        <path d="M50 5 L90 15 L80 40 L60 30 Z" />
+                        <path d="M15 50 L45 45 L50 80 L20 90 Z" />
+                        <path d="M60 50 L95 55 L85 90 L55 85 Z" />
+                        <line x1="0" y1="100" x2="100" y2="0" stroke-width="1" stroke-dasharray="2 2" />
+                    </svg>
+                </div>
+                <div class="game-title">SHATTERED<br>REFLECTION</div>
+                <div class="game-desc">Who are you looking at?</div>
+            </a>
 
-    processStep() {
-        if(this.sIdx >= this.script.length) return;
-        const s = this.script[this.sIdx];
+        </div>
+
+        <div class="status-bar">
+            <span>LV 1</span>
+            <span>HP 20/20</span>
+            <span>GOLD 0</span>
+        </div>
+    </div>
+
+    <script>
+        // Optional: Simple JS to enhance the "Undertale" selection feel
+        const cards = document.querySelectorAll('.game-card');
         
-        if(s.t === 'text') {
-            this.state = 'DIALOGUE';
-            this.showDialogue(s.s, s.txt);
-        } else if (s.t === 'combat') {
-            this.state = 'COMBAT';
-            document.getElementById('dialogue-box').style.display = 'none';
-            this.boss.active = true;
-            this.boss.type = s.boss;
-            this.boss.max = s.hp;
-            this.boss.hp = s.hp;
-            this.boss.x = W/2; this.boss.y = 100;
-        } else if (s.t === 'win') {
-            this.state = 'WIN';
-            document.getElementById('victory-screen').classList.remove('hidden');
-            document.getElementById('hud').style.opacity = 0;
-        }
-    },
-
-    showDialogue(speaker, text) {
-        const box = document.getElementById('dialogue-box');
-        box.style.display = 'block';
-        document.getElementById('speaker-name').innerText = speaker;
-        const txtEl = document.getElementById('dialogue-text');
-        txtEl.innerHTML = ""; // Clear
-        
-        // Draw Portrait
-        P_CTX.fillStyle = "#000"; P_CTX.fillRect(0,0,100,100);
-        if(speaker === 'divija') this.drawFace('#ff3e3e', true);
-        else if(speaker === 'echo') this.drawFace('#888', false);
-        else this.drawFace('#fff', false);
-
-        this.currentStr = text;
-        this.charPos = 0;
-        this.waiting = false;
-        
-        clearInterval(this.textTimer);
-        this.textTimer = setInterval(() => {
-            const char = this.currentStr[this.charPos];
-            txtEl.textContent += char; // Using textContent preserves spaces better with css pre-wrap
-            this.charPos++;
-            if(this.charPos % 3 === 0) AudioMan.sfx('text');
-            if(this.charPos >= this.currentStr.length) {
-                clearInterval(this.textTimer);
-                this.waiting = true;
-            }
-        }, 30);
-    },
-
-    handleInteraction() {
-        if(this.state === 'DIALOGUE') {
-            if(!this.waiting) {
-                // Skip typing
-                clearInterval(this.textTimer);
-                document.getElementById('dialogue-text').textContent = this.currentStr;
-                this.waiting = true;
-            } else {
-                // Next
-                this.sIdx++;
-                this.processStep();
-            }
-        }
-    },
-
-    drawFace(color, isPlayer) {
-        P_CTX.fillStyle = color;
-        P_CTX.beginPath(); P_CTX.arc(50,50, 30, 0, Math.PI*2); P_CTX.fill();
-        if(isPlayer) {
-            P_CTX.fillStyle = "#00f3ff";
-            P_CTX.beginPath(); P_CTX.arc(50,50, 10, 0, Math.PI*2); P_CTX.fill();
-        }
-    },
-
-    loop() {
-        requestAnimationFrame(() => this.loop());
-        this.tick++;
-
-        // Clear
-        CTX.fillStyle = "#050505";
-        CTX.fillRect(0,0,W,H);
-
-        // Shake
-        if(this.shake > 0) {
-            CTX.save();
-            CTX.translate(Math.random()*this.shake - this.shake/2, Math.random()*this.shake - this.shake/2);
-            this.shake *= 0.9;
-        }
-
-        if(this.state === 'INTRO') {
-            Cinematic.update();
-            Cinematic.draw(CTX);
-        }
-        else if(this.state === 'DIALOGUE' || this.state === 'COMBAT') {
-            // Player Logic
-            if(this.state === 'COMBAT') {
-                let spd = Input.isDown('bomb') ? 2 : 5;
-                if(Input.isDown('left')) this.player.x -= spd;
-                if(Input.isDown('right')) this.player.x += spd;
-                if(Input.isDown('up')) this.player.y -= spd;
-                if(Input.isDown('down')) this.player.y += spd;
-                
-                // Clamp
-                this.player.x = Math.max(20, Math.min(W-20, this.player.x));
-                this.player.y = Math.max(20, Math.min(H-20, this.player.y));
-
-                // Shoot
-                if(Input.isDown('fire') && this.tick % 5 === 0) {
-                    this.bullets.push({x:this.player.x, y:this.player.y, vx:0, vy:-15, t:'p', c:'#ff3e3e'});
-                    AudioMan.sfx('shoot');
-                }
-            }
-
-            // Draw Player
-            if(this.player.inv > 0) this.player.inv--;
-            if(!(this.player.inv > 0 && Math.floor(this.tick/4)%2)) {
-                CTX.fillStyle = "#ff3e3e";
-                CTX.beginPath();
-                CTX.arc(this.player.x, this.player.y, this.player.r, 0, Math.PI*2);
-                CTX.fill();
-                // Soul Center
-                CTX.fillStyle = "#00f3ff";
-                CTX.beginPath(); CTX.arc(this.player.x, this.player.y, 4, 0, Math.PI*2); CTX.fill();
-            }
-
-            // Boss Logic
-            if(this.state === 'COMBAT' && this.boss.active) {
-                // Move Boss
-                this.boss.x = W/2 + Math.sin(this.tick*0.02) * 100;
-                
-                // Draw Boss
-                CTX.fillStyle = this.boss.type === 'echo' ? '#aaa' : (this.boss.type==='crowd'?'#f0f':'#ffd700');
-                CTX.fillRect(this.boss.x-30, this.boss.y-30, 60, 60);
-
-                // Patterns
-                if(this.tick % 10 === 0) {
-                    // Simple pattern: aimed shot
-                    let ang = Math.atan2(this.player.y - this.boss.y, this.player.x - this.boss.x);
-                    this.bullets.push({x:this.boss.x, y:this.boss.y, vx:Math.cos(ang)*5, vy:Math.sin(ang)*5, t:'e', c:'#fff'});
-                }
-                if(this.boss.type === 'crowd' && this.tick % 30 === 0) {
-                    // Spread
-                    for(let i=-2; i<=2; i++) {
-                         this.bullets.push({x:this.boss.x, y:this.boss.y, vx:i*2, vy:4, t:'e', c:'#f0f'});
-                    }
-                }
-            }
-
-            // Bullet Physics
-            for(let i=this.bullets.length-1; i>=0; i--) {
-                let b = this.bullets[i];
-                b.x += b.vx; b.y += b.vy;
-                
-                CTX.fillStyle = b.c;
-                CTX.beginPath(); CTX.arc(b.x, b.y, 5, 0, Math.PI*2); CTX.fill();
-
-                // Cleanup
-                if(b.x<0||b.x>W||b.y<0||b.y>H) { this.bullets.splice(i,1); continue; }
-
-                // Collisions
-                if(b.t === 'e') {
-                    // Hit Player
-                    let d = Math.hypot(b.x - this.player.x, b.y - this.player.y);
-                    if(d < 10 && this.player.inv === 0) {
-                        this.player.hp--;
-                        this.player.inv = 60;
-                        AudioMan.sfx('hit');
-                        this.bullets.splice(i,1);
-                        if(this.player.hp <= 0) {
-                             this.state = 'OVER';
-                             document.getElementById('game-over').classList.remove('hidden');
-                             document.getElementById('touch-controls').style.display = 'none';
-                        }
-                    }
-                } else if(b.t === 'p' && this.boss.active) {
-                    // Hit Boss
-                    let d = Math.hypot(b.x - this.boss.x, b.y - this.boss.y);
-                    if(d < 40) {
-                        this.boss.hp--;
-                        this.bullets.splice(i,1);
-                        if(this.boss.hp <= 0) {
-                            this.boss.active = false;
-                            this.bullets = []; // Clear screen
-                            this.sIdx++;
-                            this.processStep();
-                        }
-                    }
-                }
-            }
-
-            // HUD
-            const hpPct = (this.player.hp / this.player.maxHp) * 100;
-            document.getElementById('hp-bar').style.width = hpPct + "%";
-        }
-
-        if(this.shake > 0) CTX.restore();
-    }
-};
-
-Game.init();
-
-document.getElementById('start-btn').onclick = () => Game.startIntro();
-document.getElementById('retry-btn').onclick = () => location.reload();
-
-</script>
+        cards.forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                // You could add a sound effect here if you had audio files
+                // let audio = new Audio('select.wav'); audio.play();
+                console.log('Soul moved to ' + card.querySelector('.game-title').innerText);
+            });
+        });
+    </script>
 </body>
 </html>
