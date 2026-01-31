@@ -3,832 +3,2226 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Divija: The Calculus of the Heart [Deluxe]</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>❤️</text></svg>">
+    <title>DIVIJA: The Weight of Stars</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=VT323&family=Cinzel:wght@700&family=Press+Start+2P&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Source+Code+Pro:wght@300;400&family=Cormorant+Garamond:ital,wght@0,400;1,400&display=swap');
 
         :root {
-            --bg: #050505;
-            --heart: #ff4d4d;
-            --soul: #00f3ff;
-            --gold: #ffd700;
-            --void: #1a1a1a;
-            --text-shadow: 2px 2px 0px #000;
+            --void: #0a0a0f;
+            --soul: #ff3366;
+            --hope: #00d4ff;
+            --memory: #ffd700;
+            --shadow: #4a0080;
+            --light: #ffffff;
+            --whisper: #888899;
         }
 
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            margin: 0;
-            background: #000;
-            overflow: hidden;
+            background: var(--void);
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            font-family: 'VT323', monospace;
-            color: white;
-            user-select: none;
+            font-family: 'Source Code Pro', monospace;
+            overflow: hidden;
+            color: var(--light);
         }
 
-        /* --- CRT CONTAINER --- */
         #game-container {
             position: relative;
-            width: 800px;
-            height: 600px;
-            background: #000;
-            border: 4px solid #333;
-            box-shadow: 0 0 50px rgba(0, 243, 255, 0.1);
+            width: 900px;
+            height: 700px;
+            background: linear-gradient(180deg, #0a0a0f 0%, #0f0a1a 100%);
+            border: 2px solid #222;
+            border-radius: 4px;
             overflow: hidden;
-            border-radius: 10px;
+            box-shadow: 
+                0 0 60px rgba(255, 51, 102, 0.1),
+                inset 0 0 100px rgba(0, 0, 0, 0.5);
         }
 
-        canvas { display: block; image-rendering: pixelated; }
-
-        /* --- UI LAYERS --- */
-        #ui-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; display: flex; flex-direction: column;
-            justify-content: space-between; padding: 20px; box-sizing: border-box; z-index: 20;
-            opacity: 0; transition: opacity 1s;
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
         }
 
-        .hud-row {
-            display: flex; justify-content: space-between; align-items: center;
-            font-size: 24px; text-shadow: var(--text-shadow);
+        /* === OVERLAY EFFECTS === */
+        .vignette {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(ellipse at center, transparent 0%, transparent 50%, rgba(0,0,0,0.8) 100%);
+            pointer-events: none;
+            z-index: 100;
         }
 
-        .bar-container {
-            width: 200px; height: 20px; background: #333;
-            border: 2px solid white; margin-left: 10px; position: relative;
-        }
-        .bar-fill { height: 100%; transition: width 0.1s linear; }
-        #hp-fill { background: var(--heart); }
-        #tp-fill { background: var(--soul); width: 0%; }
-
-        /* --- DIALOGUE --- */
-        #dialogue-box {
-            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
-            width: 90%; height: 160px; background: #000; border: 4px solid white;
-            padding: 20px; display: none; box-sizing: border-box; font-size: 28px; line-height: 1.2;
-            z-index: 30;
-        }
-        .face-portrait {
-            float: left; width: 100px; height: 100px; margin-right: 20px;
-            border: 2px solid white; background: #000; display: flex;
-            justify-content: center; align-items: center; font-size: 50px;
-        }
-
-        /* --- SCREENS --- */
-        .screen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,1); display: flex; flex-direction: column;
-            justify-content: center; align-items: center; z-index: 50;
-            transition: opacity 1s;
-        }
-        .hidden { opacity: 0; pointer-events: none; }
-
-        h1 {
-            font-family: 'Cinzel', serif; font-size: 60px; color: var(--soul);
-            margin: 0; text-shadow: 0 0 20px var(--soul); letter-spacing: 5px;
-        }
-
-        button {
-            background: transparent; color: white; font-family: 'VT323', monospace;
-            font-size: 30px; border: 2px solid white; padding: 10px 40px; margin-top: 40px;
-            cursor: pointer; transition: all 0.2s; text-transform: uppercase;
-        }
-        button:hover { background: white; color: black; transform: scale(1.1); box-shadow: 0 0 20px white; }
-
-        /* --- CINEMATIC INTRO STYLES --- */
-        #cinematic-layer {
-            background: #000; z-index: 40; text-align: center;
-        }
-        .scene-element { font-size: 100px; transition: all 2s; position: absolute; }
-        .fade-in { opacity: 1; }
-        .fade-out { opacity: 0; }
-        
-        #story-text {
-            position: absolute; bottom: 100px; width: 100%; text-align: center;
-            font-size: 32px; color: #ddd; font-family: 'Cinzel', serif;
-        }
-
-        /* --- CRT FX --- */
         .scanlines {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
-                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            background-size: 100% 4px, 6px 100%; pointer-events: none; z-index: 100;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 0, 0, 0.1) 2px,
+                rgba(0, 0, 0, 0.1) 4px
+            );
+            pointer-events: none;
+            z-index: 101;
         }
-        .flicker { animation: flicker 0.15s infinite; pointer-events: none; opacity: 0.1; position: absolute; width: 100%; height: 100%; background:white; z-index: 99;}
-        
-        @keyframes flicker { 0% { opacity: 0.02; } 50% { opacity: 0.05; } 100% { opacity: 0.02; } }
-        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
-        
-        .controls { margin-top: 20px; color: #666; font-size: 18px; }
-        .key { color: var(--gold); border: 1px solid #555; padding: 0 4px; border-radius: 4px; }
+
+        /* === UI LAYER === */
+        #ui-layer {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        .hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .stat-block {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #333;
+            padding: 15px 20px;
+            border-radius: 4px;
+        }
+
+        .character-name {
+            font-family: 'Cinzel', serif;
+            font-size: 18px;
+            color: var(--soul);
+            letter-spacing: 3px;
+            margin-bottom: 8px;
+        }
+
+        .hp-bar-container {
+            width: 200px;
+            height: 8px;
+            background: #1a1a2e;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .hp-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--soul), #ff6699);
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px var(--soul);
+        }
+
+        .hp-text {
+            font-size: 12px;
+            color: var(--whisper);
+            margin-top: 5px;
+        }
+
+        .boss-info {
+            text-align: right;
+        }
+
+        .boss-name {
+            font-family: 'Cinzel', serif;
+            font-size: 16px;
+            color: var(--shadow);
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+            text-shadow: 0 0 10px var(--shadow);
+        }
+
+        .boss-hp-container {
+            width: 300px;
+            height: 6px;
+            background: #1a1a2e;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .boss-hp {
+            height: 100%;
+            background: linear-gradient(90deg, var(--shadow), #8800cc);
+            transition: width 0.5s ease;
+        }
+
+        .phase-indicator {
+            font-size: 11px;
+            color: var(--whisper);
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        /* === DIALOGUE SYSTEM === */
+        #dialogue-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+            pointer-events: auto;
+        }
+
+        #dialogue-container.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .dialogue-box {
+            background: linear-gradient(180deg, rgba(10, 10, 20, 0.95), rgba(5, 5, 15, 0.98));
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 25px 30px;
+            position: relative;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .speaker-portrait {
+            position: absolute;
+            left: -80px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 3px solid #333;
+            background: var(--void);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .portrait-inner {
+            width: 100%;
+            height: 100%;
+        }
+
+        .speaker-name {
+            font-family: 'Cinzel', serif;
+            font-size: 14px;
+            letter-spacing: 3px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #333;
+        }
+
+        .dialogue-text {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 22px;
+            line-height: 1.6;
+            color: #ddd;
+            min-height: 60px;
+        }
+
+        .dialogue-continue {
+            position: absolute;
+            bottom: 12px;
+            right: 20px;
+            font-size: 12px;
+            color: var(--whisper);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        /* === SCREENS === */
+        .screen {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: var(--void);
+            z-index: 200;
+            transition: opacity 1s ease;
+        }
+
+        .screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #title-screen {
+            text-align: center;
+        }
+
+        .title-main {
+            font-family: 'Cinzel', serif;
+            font-size: 72px;
+            font-weight: 700;
+            letter-spacing: 15px;
+            color: var(--light);
+            text-shadow: 
+                0 0 30px var(--soul),
+                0 0 60px rgba(255, 51, 102, 0.5);
+            margin-bottom: 10px;
+        }
+
+        .title-sub {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 24px;
+            font-style: italic;
+            color: var(--whisper);
+            letter-spacing: 5px;
+            margin-bottom: 60px;
+        }
+
+        .start-button {
+            background: transparent;
+            border: 2px solid var(--light);
+            color: var(--light);
+            font-family: 'Cinzel', serif;
+            font-size: 18px;
+            letter-spacing: 5px;
+            padding: 15px 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .start-button::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .start-button:hover {
+            background: var(--light);
+            color: var(--void);
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+        }
+
+        .start-button:hover::before {
+            left: 100%;
+        }
+
+        .controls-hint {
+            margin-top: 40px;
+            font-size: 13px;
+            color: #555;
+            line-height: 1.8;
+        }
+
+        .controls-hint span {
+            color: var(--hope);
+            border: 1px solid #333;
+            padding: 2px 8px;
+            border-radius: 3px;
+            margin: 0 3px;
+        }
+
+        .title-quote {
+            position: absolute;
+            bottom: 40px;
+            font-family: 'Cormorant Garamond', serif;
+            font-style: italic;
+            font-size: 16px;
+            color: #444;
+        }
+
+        /* === CHAPTER CARDS === */
+        #chapter-card {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: var(--void);
+            z-index: 150;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1s ease;
+        }
+
+        #chapter-card.active {
+            opacity: 1;
+        }
+
+        .chapter-number {
+            font-family: 'Source Code Pro', monospace;
+            font-size: 14px;
+            color: var(--whisper);
+            letter-spacing: 5px;
+            margin-bottom: 20px;
+        }
+
+        .chapter-title {
+            font-family: 'Cinzel', serif;
+            font-size: 48px;
+            color: var(--light);
+            letter-spacing: 8px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .chapter-subtitle {
+            font-family: 'Cormorant Garamond', serif;
+            font-style: italic;
+            font-size: 20px;
+            color: var(--whisper);
+        }
+
+        /* === GAME OVER === */
+        #game-over {
+            background: rgba(10, 0, 0, 0.98);
+        }
+
+        .game-over-text {
+            font-family: 'Cinzel', serif;
+            font-size: 48px;
+            color: var(--soul);
+            letter-spacing: 10px;
+            margin-bottom: 30px;
+            text-shadow: 0 0 30px var(--soul);
+        }
+
+        .retry-button {
+            background: transparent;
+            border: 1px solid var(--soul);
+            color: var(--soul);
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 20px;
+            padding: 12px 40px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .retry-button:hover {
+            background: var(--soul);
+            color: var(--void);
+        }
+
+        /* === VICTORY === */
+        #victory-screen {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .victory-title {
+            font-family: 'Cinzel', serif;
+            font-size: 42px;
+            color: var(--memory);
+            letter-spacing: 8px;
+            margin-bottom: 40px;
+            text-shadow: 0 0 40px var(--memory);
+        }
+
+        .victory-text {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 24px;
+            line-height: 2;
+            color: #ccc;
+            max-width: 600px;
+        }
+
+        .victory-dedication {
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 1px solid #333;
+        }
+
+        .victory-dedication p {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 20px;
+            color: var(--hope);
+            margin-bottom: 10px;
+        }
+
+        .victory-signature {
+            font-family: 'Cinzel', serif;
+            font-size: 18px;
+            color: var(--memory);
+            margin-top: 20px;
+        }
+
+        /* === ARENA === */
+        .arena-border {
+            stroke: var(--light);
+            stroke-width: 2;
+            fill: none;
+        }
+
+        /* === THOUGHT BUBBLES === */
+        .thought-bubble {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #444;
+            border-radius: 20px;
+            padding: 10px 15px;
+            font-family: 'Cormorant Garamond', serif;
+            font-style: italic;
+            font-size: 16px;
+            color: #888;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+            z-index: 60;
+        }
+
+        .thought-bubble.visible {
+            opacity: 1;
+        }
+
+        /* === BOMB METER === */
+        .determination-meter {
+            position: absolute;
+            bottom: 200px;
+            left: 20px;
+            width: 30px;
+            height: 150px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #333;
+            border-radius: 15px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column-reverse;
+        }
+
+        .determination-fill {
+            width: 100%;
+            background: linear-gradient(0deg, var(--hope), #00ffaa);
+            transition: height 0.2s ease;
+            box-shadow: 0 0 15px var(--hope);
+        }
+
+        .determination-label {
+            position: absolute;
+            bottom: 160px;
+            left: 25px;
+            font-size: 10px;
+            color: var(--whisper);
+            writing-mode: vertical-rl;
+            letter-spacing: 2px;
+        }
     </style>
 </head>
 <body>
 
 <div id="game-container">
+    <canvas id="bgCanvas"></canvas>
     <canvas id="gameCanvas"></canvas>
+    
+    <div class="vignette"></div>
     <div class="scanlines"></div>
-    <div class="flicker"></div>
 
-    <!-- UI -->
+    <!-- UI Layer -->
     <div id="ui-layer">
-        <div class="hud-row">
-            <div style="display:flex; align-items:center;">
-                <span style="color:var(--heart)">DIVIJA</span>
-                <span style="font-size:18px; color:#888; margin-left:10px;">LV 25</span>
-                <div class="bar-container">
-                    <div class="bar-fill" id="hp-fill"></div>
+        <div class="hud">
+            <div class="stat-block">
+                <div class="character-name">DIVIJA</div>
+                <div class="hp-bar-container">
+                    <div class="hp-bar" id="player-hp"></div>
                 </div>
-                <span id="hp-text" style="margin-left:10px">20/20</span>
+                <div class="hp-text"><span id="hp-current">100</span> / <span id="hp-max">100</span></div>
             </div>
-            <div style="display:flex; align-items:center;">
-                <span style="color:var(--soul)">BOMB</span>
-                <div class="bar-container" style="width:100px; border-color:var(--soul)">
-                    <div class="bar-fill" id="tp-fill"></div>
+            
+            <div class="stat-block boss-info" id="boss-stats" style="opacity: 0;">
+                <div class="boss-name" id="boss-name">???</div>
+                <div class="boss-hp-container">
+                    <div class="boss-hp" id="boss-hp"></div>
                 </div>
-                <span id="tp-text" style="margin-left:10px">0%</span>
+                <div class="phase-indicator" id="phase-name">Awakening</div>
             </div>
         </div>
 
-        <div id="dialogue-box">
-            <div class="face-portrait" id="face-icon">♥</div>
-            <div id="dialogue-text"></div>
-            <div style="position:absolute; bottom:10px; right:20px; font-size:16px; color:#666;">[Z] NEXT</div>
+        <div class="determination-meter">
+            <div class="determination-fill" id="determination-fill" style="height: 0%;"></div>
+        </div>
+        <div class="determination-label">RESOLVE</div>
+
+        <div id="dialogue-container">
+            <div class="dialogue-box">
+                <div class="speaker-portrait">
+                    <canvas class="portrait-inner" id="portrait-canvas" width="120" height="120"></canvas>
+                </div>
+                <div class="speaker-name" id="speaker-name">???</div>
+                <div class="dialogue-text" id="dialogue-text"></div>
+                <div class="dialogue-continue">[Z] Continue</div>
+            </div>
         </div>
     </div>
 
-    <!-- TITLE SCREEN -->
+    <!-- Chapter Card -->
+    <div id="chapter-card">
+        <div class="chapter-number" id="chapter-num">CHAPTER I</div>
+        <div class="chapter-title" id="chapter-title">THE DESCENT</div>
+        <div class="chapter-subtitle" id="chapter-sub">Where silence speaks loudest</div>
+    </div>
+
+    <!-- Title Screen -->
     <div id="title-screen" class="screen">
-        <h1 style="font-size:70px">DIVIJA</h1>
-        <div style="font-size:24px; letter-spacing:8px; margin-bottom:20px; color:#888;">CALCULUS OF THE HEART</div>
-        <button id="btn-start">BEGIN SIMULATION</button>
-        <div class="controls">
-            <p>ARROWS to Move • SHIFT to Focus</p>
-            <p>Z to Shoot/Talk • X to Bomb</p>
+        <div class="title-main">DIVIJA</div>
+        <div class="title-sub">The Weight of Stars</div>
+        <button class="start-button" id="start-btn">ENTER</button>
+        <div class="controls-hint">
+            <span>←</span><span>↑</span><span>→</span><span>↓</span> to move
+            <br>
+            Hold <span>SHIFT</span> for precision
+            <br>
+            <span>Z</span> to interact  •  <span>X</span> when hope overflows
         </div>
+        <div class="title-quote">"The stars don't shine for those who refuse to look up."</div>
     </div>
 
-    <!-- CINEMATIC LAYER -->
-    <div id="cinematic-layer" class="screen hidden">
-        <div id="scene-container" style="position:relative; width:100%; height:100%;">
-            <!-- Elements injected by JS -->
-        </div>
-        <div id="story-text"></div>
-        <button id="skip-btn" style="position:absolute; bottom:20px; right:20px; font-size:16px; padding:5px 10px; margin:0;">Skip >></button>
-    </div>
-
-    <!-- GAME OVER -->
+    <!-- Game Over -->
     <div id="game-over" class="screen hidden">
-        <h1 style="color: var(--heart)">HEART BROKEN</h1>
-        <p style="font-size: 24px;">Divija does not give up.</p>
-        <button id="btn-retry">Refuse to Die</button>
+        <div class="game-over-text">FADING...</div>
+        <p style="color: #666; margin-bottom: 30px; font-style: italic;">But something inside refuses to let go.</p>
+        <button class="retry-button" id="retry-btn">I'm not done yet.</button>
     </div>
 
-    <!-- VICTORY -->
+    <!-- Victory -->
     <div id="victory-screen" class="screen hidden">
-        <h1 style="color: var(--gold)">PROOF COMPLETE</h1>
-        <div style="text-align: center; max-width: 600px; font-size: 24px; line-height: 1.5;">
-            <p>The variable 'Divija' has withstood the Chaos.</p>
-            <p>You are stronger than the system.</p>
-            <p style="margin-top: 30px; color: var(--soul); font-size: 32px;">
-                Happy Birthday.<br>Love, Daddy. 👑
-            </p>
-        </div>
-        <button onclick="location.reload()">Reset World</button>
+        <div class="victory-title">ILLUMINATED</div>
+        <div class="victory-text" id="victory-text"></div>
     </div>
+
+    <!-- Thought bubbles for ambient storytelling -->
+    <div class="thought-bubble" id="thought-1" style="top: 30%; left: 10%;"></div>
+    <div class="thought-bubble" id="thought-2" style="top: 40%; right: 10%;"></div>
 </div>
 
 <script>
-/**
- * ENGINE: HEART_CORE_V3
- * Advanced Bullet Hell Engine + Cinematic Sequencer
- */
+// ═══════════════════════════════════════════════════════════════════
+// THE WEIGHT OF STARS - A Game for Divija
+// "Some stories are told through words. Others, through survival."
+// ═══════════════════════════════════════════════════════════════════
 
 const CONFIG = {
-    w: 800, h: 600,
-    colors: { bg: '#050505', heart: '#ff4d4d', soul: '#00f3ff', bullet: '#FFF', warn: '#FF0000', gold: '#ffd700' }
+    width: 900,
+    height: 700,
+    colors: {
+        void: '#0a0a0f',
+        soul: '#ff3366',
+        hope: '#00d4ff',
+        memory: '#ffd700',
+        shadow: '#4a0080',
+        echo: '#00ff88',
+        fear: '#ff0044',
+        warmth: '#ffaa00'
+    }
 };
 
-// --- AUDIO MANAGER ---
-const AudioMan = {
-    bgm: null,
+// ═══════════════════════════════════════════════════════════════════
+// AUDIO ENGINE
+// ═══════════════════════════════════════════════════════════════════
+
+const Audio = {
     ctx: null,
+    
     init() {
         this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-        // Try to load the MP3
-        this.bgm = new Audio('fallen-down.mp3');
-        this.bgm.loop = true;
-        this.bgm.volume = 0.5;
     },
-    playBGM() {
-        if(this.bgm) this.bgm.play().catch(e => console.log("Audio play blocked until interaction"));
-    },
-    stopBGM() {
-        if(this.bgm) {
-            // Fade out effect
-            let vol = 0.5;
-            const fade = setInterval(() => {
-                vol -= 0.05;
-                if(vol <= 0) {
-                    this.bgm.pause();
-                    this.bgm.currentTime = 0;
-                    clearInterval(fade);
-                } else {
-                    this.bgm.volume = vol;
-                }
-            }, 100);
-        }
-    },
-    sfx(type) {
+    
+    play(type, params = {}) {
         if (!this.ctx) return;
+        
         const t = this.ctx.currentTime;
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
         osc.connect(gain);
         gain.connect(this.ctx.destination);
+        
+        switch(type) {
+            case 'text':
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400 + Math.random() * 200, t);
+                gain.gain.setValueAtTime(0.03, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+                osc.start(t);
+                osc.stop(t + 0.05);
+                break;
+                
+            case 'hit':
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, t);
+                osc.frequency.exponentialRampToValueAtTime(50, t + 0.2);
+                gain.gain.setValueAtTime(0.15, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+                osc.start(t);
+                osc.stop(t + 0.2);
+                break;
+                
+            case 'graze':
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, t);
+                osc.frequency.exponentialRampToValueAtTime(1200, t + 0.1);
+                gain.gain.setValueAtTime(0.04, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+                osc.start(t);
+                osc.stop(t + 0.1);
+                break;
+                
+            case 'resolve':
+                // Powerful chord for bomb/resolve
+                [200, 300, 400, 500].forEach((freq, i) => {
+                    const o = this.ctx.createOscillator();
+                    const g = this.ctx.createGain();
+                    o.connect(g);
+                    g.connect(this.ctx.destination);
+                    o.type = 'sine';
+                    o.frequency.setValueAtTime(freq, t);
+                    o.frequency.exponentialRampToValueAtTime(freq * 2, t + 1);
+                    g.gain.setValueAtTime(0.1, t);
+                    g.gain.exponentialRampToValueAtTime(0.001, t + 1);
+                    o.start(t + i * 0.1);
+                    o.stop(t + 1.2);
+                });
+                break;
+                
+            case 'heartbeat':
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(60, t);
+                gain.gain.setValueAtTime(0.2, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+                osc.start(t);
+                osc.stop(t + 0.3);
+                // Second beat
+                setTimeout(() => {
+                    const o2 = this.ctx.createOscillator();
+                    const g2 = this.ctx.createGain();
+                    o2.connect(g2);
+                    g2.connect(this.ctx.destination);
+                    o2.type = 'sine';
+                    o2.frequency.setValueAtTime(50, this.ctx.currentTime);
+                    g2.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                    g2.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.2);
+                    o2.start(this.ctx.currentTime);
+                    o2.stop(this.ctx.currentTime + 0.2);
+                }, 150);
+                break;
 
-        if (type === 'shoot') {
-            osc.frequency.setValueAtTime(400, t);
-            gain.gain.setValueAtTime(0.05, t);
-            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
-            osc.start(t); osc.stop(t + 0.1);
-        } else if (type === 'hit') {
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(150, t);
-            osc.frequency.linearRampToValueAtTime(50, t + 0.2);
-            gain.gain.setValueAtTime(0.2, t);
-            gain.gain.linearRampToValueAtTime(0, t + 0.2);
-            osc.start(t); osc.stop(t + 0.2);
-        } else if (type === 'graze') {
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(1200, t);
-            gain.gain.setValueAtTime(0.05, t);
-            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
-            osc.start(t); osc.stop(t + 0.1);
-        } else if (type === 'bomb') {
-            osc.type = 'square';
-            osc.frequency.setValueAtTime(100, t);
-            osc.frequency.linearRampToValueAtTime(1000, t + 1);
-            gain.gain.setValueAtTime(0.3, t);
-            gain.gain.linearRampToValueAtTime(0, t + 1);
-            osc.start(t); osc.stop(t + 1);
-        } else if (type === 'text') {
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(600, t);
-            gain.gain.setValueAtTime(0.05, t);
-            gain.gain.linearRampToValueAtTime(0, t + 0.03);
-            osc.start(t); osc.stop(t + 0.03);
+            case 'ambient':
+                // Low drone
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(params.freq || 80, t);
+                gain.gain.setValueAtTime(0.02, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 2);
+                osc.start(t);
+                osc.stop(t + 2);
+                break;
         }
     }
 };
 
-// --- INPUT ---
+// ═══════════════════════════════════════════════════════════════════
+// INPUT HANDLER
+// ═══════════════════════════════════════════════════════════════════
+
 const Input = {
     keys: {},
+    justPressed: {},
+    
     init() {
         window.addEventListener('keydown', e => {
-            if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
-            this.keys[e.key.toLowerCase()] = true; this.keys[e.code] = true;
-        });
-        window.addEventListener('keyup', e => {
-            this.keys[e.key.toLowerCase()] = false; this.keys[e.code] = false;
-        });
-    },
-    isDown(action) {
-        if(action === 'up') return this.keys['arrowup'] || this.keys['w'];
-        if(action === 'down') return this.keys['arrowdown'] || this.keys['s'];
-        if(action === 'left') return this.keys['arrowleft'] || this.keys['a'];
-        if(action === 'right') return this.keys['arrowright'] || this.keys['d'];
-        if(action === 'focus') return this.keys['shift'] || this.keys['shiftleft'];
-        if(action === 'fire') return this.keys['z'] || this.keys['enter'];
-        if(action === 'bomb') return this.keys['x'];
-        return false;
-    }
-};
-
-// --- CINEMATIC ENGINE ---
-const Cinematic = {
-    step: 0,
-    container: document.getElementById('scene-container'),
-    text: document.getElementById('story-text'),
-    timer: null,
-    
-    start(onComplete) {
-        const layer = document.getElementById('cinematic-layer');
-        layer.classList.remove('hidden');
-        this.step = 0;
-        this.onComplete = onComplete;
-        
-        // Skip button
-        document.getElementById('skip-btn').onclick = () => {
-            clearTimeout(this.timer);
-            this.end();
-        };
-
-        this.playScene();
-    },
-
-    playScene() {
-        this.container.innerHTML = ''; // Clear previous
-        
-        const sequences = [
-            {
-                // Scene 1: Home
-                duration: 4000,
-                html: `<div class="scene-element" style="top:40%; left:45%; font-size:150px;">🏠</div>
-                       <div class="scene-element" style="top:20%; left:20%; animation:float 3s infinite;">🌧️</div>
-                       <div class="scene-element" style="top:25%; left:70%; animation:float 4s infinite;">🌧️</div>`,
-                text: "It was a quiet Tuesday..."
-            },
-            {
-                // Scene 2: Forest
-                duration: 4000,
-                html: `<div class="scene-element" style="top:40%; left:20%; font-size:120px;">🌲</div>
-                       <div class="scene-element" style="top:35%; left:60%; font-size:140px;">🌲</div>
-                       <div class="scene-element" style="top:50%; left:40%; font-size:50px;">🧍‍♀️</div>`,
-                text: "You wandered where the code breaks."
-            },
-            {
-                // Scene 3: Glitch
-                duration: 4000,
-                html: `<div class="scene-element" style="top:40%; left:45%; font-size:150px; color:cyan; text-shadow:2px 2px red;">👁️</div>
-                       <div class="scene-element" style="top:50%; left:40%; font-size:50px; opacity:0.5;">🧍‍♀️</div>`,
-                text: "The System found you."
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'z', 'x'].includes(e.key.toLowerCase())) {
+                e.preventDefault();
             }
-        ];
-
-        if (this.step < sequences.length) {
-            const seq = sequences[this.step];
-            this.container.innerHTML = seq.html;
-            this.text.innerText = seq.text;
-            this.text.style.opacity = 0;
-            
-            // Fade text in
-            setTimeout(() => this.text.style.opacity = 1, 500);
-
-            this.timer = setTimeout(() => {
-                this.step++;
-                this.playScene();
-            }, seq.duration);
-        } else {
-            this.end();
-        }
+            if (!this.keys[e.key.toLowerCase()]) {
+                this.justPressed[e.key.toLowerCase()] = true;
+            }
+            this.keys[e.key.toLowerCase()] = true;
+            this.keys[e.code] = true;
+        });
+        
+        window.addEventListener('keyup', e => {
+            this.keys[e.key.toLowerCase()] = false;
+            this.keys[e.code] = false;
+        });
     },
-
-    end() {
-        document.getElementById('cinematic-layer').classList.add('hidden');
-        AudioMan.stopBGM(); // Stop the sad song
-        if(this.onComplete) this.onComplete();
+    
+    update() {
+        this.justPressed = {};
+    },
+    
+    isDown(key) {
+        const mapping = {
+            up: ['arrowup', 'w'],
+            down: ['arrowdown', 's'],
+            left: ['arrowleft', 'a'],
+            right: ['arrowright', 'd'],
+            focus: ['shift', 'ShiftLeft', 'ShiftRight'],
+            confirm: ['z', 'enter', ' '],
+            special: ['x']
+        };
+        
+        if (mapping[key]) {
+            return mapping[key].some(k => this.keys[k]);
+        }
+        return this.keys[key];
+    },
+    
+    wasPressed(key) {
+        const mapping = {
+            confirm: ['z', 'enter', ' '],
+            special: ['x']
+        };
+        
+        if (mapping[key]) {
+            return mapping[key].some(k => this.justPressed[k]);
+        }
+        return this.justPressed[key];
     }
 };
 
-// --- GAME ENTITIES ---
-class Player {
-    constructor() {
-        this.x = CONFIG.w / 2; this.y = CONFIG.h - 100;
-        this.r = 3; // Soul Hitbox
-        this.spriteR = 12; // Visual
-        this.speed = 5; this.focusSpeed = 2;
-        this.hp = 20; this.maxHp = 20;
-        this.tp = 0; // Tech Points (Bomb meter)
-        this.invuln = 0;
-    }
+// ═══════════════════════════════════════════════════════════════════
+// THE NARRATIVE - Where the soul of the game lives
+// ═══════════════════════════════════════════════════════════════════
 
-    update(arena) {
-        const spd = Input.isDown('focus') ? this.focusSpeed : this.speed;
-        if (Input.isDown('left')) this.x -= spd;
-        if (Input.isDown('right')) this.x += spd;
-        if (Input.isDown('up')) this.y -= spd;
-        if (Input.isDown('down')) this.y += spd;
-
-        // Clamp
-        this.x = Math.max(arena.x + 8, Math.min(arena.x + arena.w - 8, this.x));
-        this.y = Math.max(arena.y + 8, Math.min(arena.y + arena.h - 8, this.y));
-
-        if (this.invuln > 0) this.invuln--;
-
-        // Shoot
-        if (Input.isDown('fire') && Game.tick % 5 === 0) {
-            Game.bullets.push(new Bullet(this.x - 5, this.y - 10, -Math.PI/2, 12, 'player'));
-            Game.bullets.push(new Bullet(this.x + 5, this.y - 10, -Math.PI/2, 12, 'player'));
-            AudioMan.sfx('shoot');
+const STORY = {
+    // Characters and their visual/audio signatures
+    characters: {
+        narrator: {
+            name: "...",
+            color: "#666666",
+            voice: 400
+        },
+        divija: {
+            name: "DIVIJA",
+            color: CONFIG.colors.soul,
+            voice: 600
+        },
+        echo: {
+            name: "ECHO",
+            color: CONFIG.colors.echo,
+            voice: 300
+        },
+        void: {
+            name: "THE VOID",
+            color: CONFIG.colors.shadow,
+            voice: 100
+        },
+        crowd: {
+            name: "THE CROWD",
+            color: "#888888",
+            voice: 500
+        },
+        clock: {
+            name: "TIME",
+            color: CONFIG.colors.fear,
+            voice: 200
+        },
+        light: {
+            name: "A FAMILIAR VOICE",
+            color: CONFIG.colors.warmth,
+            voice: 450
+        },
+        memory: {
+            name: "MEMORY",
+            color: CONFIG.colors.memory,
+            voice: 550
         }
+    },
 
-        // Bomb
-        if (Input.isDown('bomb') && this.tp >= 100) {
-            this.tp = 0;
-            Game.clearEnemyBullets();
-            Game.particles.push(new Effect(this.x, this.y, 'nova'));
-            AudioMan.sfx('bomb');
-            Game.shake = 20;
+    // The script - each chapter contains sequences
+    chapters: [
+        // ═══════════════════════════════════════════════════════════
+        // PROLOGUE: THE FALL
+        // ═══════════════════════════════════════════════════════════
+        {
+            id: "prologue",
+            title: "THE FALL",
+            subtitle: "Where everything begins to unravel",
+            sequences: [
+                { type: "dialogue", speaker: "narrator", text: "It happened on an ordinary evening." },
+                { type: "dialogue", speaker: "narrator", text: "The kind where the sky forgets to change colors..." },
+                { type: "dialogue", speaker: "narrator", text: "And the silence hums louder than words ever could." },
+                { type: "pause", duration: 1500 },
+                { type: "dialogue", speaker: "narrator", text: "You were walking through thoughts you couldn't name." },
+                { type: "dialogue", speaker: "narrator", text: "When the ground beneath your certainty... simply ceased to exist." },
+                { type: "pause", duration: 2000 },
+                { type: "dialogue", speaker: "divija", text: "...Where am I?" },
+                { type: "dialogue", speaker: "narrator", text: "You fell into a place that exists between heartbeats." },
+                { type: "dialogue", speaker: "narrator", text: "Where the weight of every 'what if' becomes tangible." },
+                { type: "dialogue", speaker: "narrator", text: "Where every doubt you've ever swallowed waits patiently to speak." },
+                { type: "dialogue", speaker: "divija", text: "I don't... I don't understand." },
+                { type: "dialogue", speaker: "narrator", text: "You will." },
+                { type: "dialogue", speaker: "narrator", text: "This is the space inside yourself you've been avoiding." },
+                { type: "dialogue", speaker: "narrator", text: "Tonight, you cannot look away." },
+            ]
+        },
+
+        // ═══════════════════════════════════════════════════════════
+        // CHAPTER 1: THE ECHO
+        // ═══════════════════════════════════════════════════════════
+        {
+            id: "echo",
+            title: "THE ECHO",
+            subtitle: "The voice that sounds exactly like yours",
+            boss: {
+                name: "ECHO",
+                maxHp: 100,
+                phases: ["Whispers", "Accusations", "Drowning"]
+            },
+            sequences: [
+                { type: "dialogue", speaker: "narrator", text: "Something stirs in the darkness ahead." },
+                { type: "dialogue", speaker: "narrator", text: "A shape. Familiar. Too familiar." },
+                { type: "pause", duration: 1000 },
+                { type: "dialogue", speaker: "echo", text: "Oh. You're here." },
+                { type: "dialogue", speaker: "divija", text: "Who... who are you?" },
+                { type: "dialogue", speaker: "echo", text: "Don't be stupid. You know exactly who I am." },
+                { type: "dialogue", speaker: "echo", text: "I'm the version of you that remembers every mistake." },
+                { type: "dialogue", speaker: "echo", text: "Every awkward silence. Every time you weren't enough." },
+                { type: "dialogue", speaker: "divija", text: "That's not—" },
+                { type: "dialogue", speaker: "echo", text: "Shh. Remember that time you spoke up and everyone just... stared?" },
+                { type: "dialogue", speaker: "echo", text: "Remember when you tried so hard and it still wasn't enough?" },
+                { type: "dialogue", speaker: "echo", text: "I remember everything, Divija. I never let you forget." },
+                { type: "dialogue", speaker: "divija", text: "Stop it..." },
+                { type: "dialogue", speaker: "echo", text: "Why? This is what you do to yourself every single night." },
+                { type: "dialogue", speaker: "echo", text: "I'm just saying it out loud." },
+                
+                // COMBAT PHASE 1
+                { type: "combat", pattern: "whispers", duration: 600, phase: "Whispers" },
+                
+                { type: "dialogue", speaker: "echo", text: "Still standing? How exhausting it must be." },
+                { type: "dialogue", speaker: "echo", text: "To pretend you're not terrified all the time." },
+                { type: "dialogue", speaker: "divija", text: "I'm not pretending. I just... keep going." },
+                { type: "dialogue", speaker: "echo", text: "But why? What's the point?" },
+                { type: "dialogue", speaker: "echo", text: "You'll never be as smart as them. As talented. As loved." },
+                
+                // COMBAT PHASE 2
+                { type: "combat", pattern: "accusations", duration: 700, phase: "Accusations" },
+                
+                { type: "dialogue", speaker: "echo", text: "You're breathing hard. Good." },
+                { type: "dialogue", speaker: "echo", text: "This is how it feels inside your chest every day." },
+                { type: "dialogue", speaker: "echo", text: "The weight you carry and call 'normal.'" },
+                { type: "dialogue", speaker: "divija", text: "And yet..." },
+                { type: "dialogue", speaker: "echo", text: "What?" },
+                { type: "dialogue", speaker: "divija", text: "I'm still here. Every day, I'm still here." },
+                { type: "dialogue", speaker: "divija", text: "You've been screaming at me my whole life." },
+                { type: "dialogue", speaker: "divija", text: "And I've never stopped moving forward." },
+                { type: "dialogue", speaker: "echo", text: "That's... that's not—" },
+                { type: "dialogue", speaker: "divija", text: "Maybe that's the point you're missing." },
+                { type: "dialogue", speaker: "divija", text: "Bravery isn't the absence of your voice." },
+                { type: "dialogue", speaker: "divija", text: "It's moving forward anyway." },
+                
+                // COMBAT PHASE 3
+                { type: "combat", pattern: "drowning", duration: 800, phase: "Drowning" },
+                
+                { type: "dialogue", speaker: "echo", text: "...You didn't break." },
+                { type: "dialogue", speaker: "divija", text: "I never do. Not completely." },
+                { type: "dialogue", speaker: "echo", text: "Maybe... maybe I'm tired too." },
+                { type: "dialogue", speaker: "echo", text: "Tired of fighting against someone who refuses to quit." },
+                { type: "dialogue", speaker: "divija", text: "Then rest. I'll carry us both forward." },
+                { type: "pause", duration: 2000 },
+                { type: "dialogue", speaker: "narrator", text: "The Echo fades. Not destroyed — accepted." },
+                { type: "dialogue", speaker: "narrator", text: "Some shadows become lighter when you stop running from them." },
+            ]
+        },
+
+        // ═══════════════════════════════════════════════════════════
+        // CHAPTER 2: THE CROWD
+        // ═══════════════════════════════════════════════════════════
+        {
+            id: "crowd",
+            title: "THE CROWD",
+            subtitle: "A thousand eyes that never blink",
+            boss: {
+                name: "THE CROWD",
+                maxHp: 120,
+                phases: ["Judgment", "Comparison", "Isolation"]
+            },
+            sequences: [
+                { type: "dialogue", speaker: "narrator", text: "The path opens into a vast, empty amphitheater." },
+                { type: "dialogue", speaker: "narrator", text: "But it's not empty. You can feel them." },
+                { type: "dialogue", speaker: "narrator", text: "Eyes. Everywhere. Watching. Measuring." },
+                { type: "pause", duration: 1500 },
+                { type: "dialogue", speaker: "crowd", text: "Look who finally showed up." },
+                { type: "dialogue", speaker: "crowd", text: "Did you see what she was wearing yesterday?" },
+                { type: "dialogue", speaker: "crowd", text: "I heard she failed that thing. You know. That thing." },
+                { type: "dialogue", speaker: "crowd", text: "She's trying too hard." },
+                { type: "dialogue", speaker: "crowd", text: "She's not trying hard enough." },
+                { type: "dialogue", speaker: "divija", text: "I can't... I can't hear myself think..." },
+                { type: "dialogue", speaker: "crowd", text: "Why would you want to think? Your thoughts are boring." },
+                { type: "dialogue", speaker: "crowd", text: "Everyone's doing better than you." },
+                { type: "dialogue", speaker: "crowd", text: "Have you seen their lives? Perfect. Polished. Posted." },
+                { type: "dialogue", speaker: "crowd", text: "What do you have?" },
+                
+                // COMBAT PHASE 1
+                { type: "combat", pattern: "judgment", duration: 600, phase: "Judgment" },
+                
+                { type: "dialogue", speaker: "crowd", text: "Still here? Most people would have smiled and agreed by now." },
+                { type: "dialogue", speaker: "crowd", text: "That's what you're supposed to do, you know." },
+                { type: "dialogue", speaker: "crowd", text: "Fit in. Blend. Disappear into the average." },
+                { type: "dialogue", speaker: "divija", text: "But... what if average isn't what I'm meant to be?" },
+                { type: "dialogue", speaker: "crowd", text: "Ha! Listen to her! She thinks she's special!" },
+                { type: "dialogue", speaker: "crowd", text: "There are millions of yous. What makes YOU different?" },
+                { type: "dialogue", speaker: "divija", text: "I don't know yet." },
+                { type: "dialogue", speaker: "divija", text: "But I'd rather spend my life finding out..." },
+                { type: "dialogue", speaker: "divija", text: "Than give up because you told me not to bother." },
+                
+                // COMBAT PHASE 2
+                { type: "combat", pattern: "comparison", duration: 700, phase: "Comparison" },
+                
+                { type: "dialogue", speaker: "crowd", text: "You're getting stronger. We don't like that." },
+                { type: "dialogue", speaker: "crowd", text: "Strong people are threatening. Inconvenient." },
+                { type: "dialogue", speaker: "crowd", text: "We prefer you small. Quiet. Apologetic." },
+                { type: "dialogue", speaker: "divija", text: "I used to apologize for existing." },
+                { type: "dialogue", speaker: "divija", text: "For taking up space. For having opinions." },
+                { type: "dialogue", speaker: "divija", text: "Not anymore." },
+                { type: "dialogue", speaker: "crowd", text: "Then you'll be ALONE." },
+                
+                // COMBAT PHASE 3
+                { type: "combat", pattern: "isolation", duration: 800, phase: "Isolation" },
+                
+                { type: "dialogue", speaker: "divija", text: "...Alone isn't the same as lonely." },
+                { type: "dialogue", speaker: "divija", text: "And loneliness in a crowd is worse than solitude with purpose." },
+                { type: "dialogue", speaker: "crowd", text: "We... we don't understand." },
+                { type: "dialogue", speaker: "divija", text: "That's okay. You don't have to." },
+                { type: "dialogue", speaker: "divija", text: "I'm not performing for you anymore." },
+                { type: "pause", duration: 2000 },
+                { type: "dialogue", speaker: "narrator", text: "The voices fade into static, then silence." },
+                { type: "dialogue", speaker: "narrator", text: "The audience was never real. Only their power over you was." },
+                { type: "dialogue", speaker: "narrator", text: "And that power only existed because you gave it to them." },
+            ]
+        },
+
+        // ═══════════════════════════════════════════════════════════
+        // CHAPTER 3: THE CLOCK
+        // ═══════════════════════════════════════════════════════════
+        {
+            id: "clock",
+            title: "THE CLOCK",
+            subtitle: "Every second is a deadline",
+            boss: {
+                name: "TIME",
+                maxHp: 140,
+                phases: ["Pressure", "Deadlines", "Running Out"]
+            },
+            sequences: [
+                { type: "dialogue", speaker: "narrator", text: "The air grows thick. Heavy." },
+                { type: "dialogue", speaker: "narrator", text: "Tick. Tick. Tick." },
+                { type: "dialogue", speaker: "narrator", text: "You can hear it now. The heartbeat of expectation." },
+                { type: "pause", duration: 1500 },
+                { type: "dialogue", speaker: "clock", text: "You're late." },
+                { type: "dialogue", speaker: "divija", text: "Late for what?" },
+                { type: "dialogue", speaker: "clock", text: "Everything. You're always late." },
+                { type: "dialogue", speaker: "clock", text: "Late to success. Late to happiness. Late to becoming who you should be by now." },
+                { type: "dialogue", speaker: "clock", text: "Others your age have already... well. You know." },
+                { type: "dialogue", speaker: "divija", text: "Already what?" },
+                { type: "dialogue", speaker: "clock", text: "Figured it out. Found their path. Achieved their dreams." },
+                { type: "dialogue", speaker: "clock", text: "And here you are, still... searching." },
+                { type: "dialogue", speaker: "divija", text: "Is searching a failure?" },
+                { type: "dialogue", speaker: "clock", text: "At your pace? Absolutely." },
+                
+                // COMBAT PHASE 1
+                { type: "combat", pattern: "pressure", duration: 600, phase: "Pressure" },
+                
+                { type: "dialogue", speaker: "clock", text: "Tick. Tick. Can you feel it slipping away?" },
+                { type: "dialogue", speaker: "clock", text: "Every moment you're not achieving is a moment wasted." },
+                { type: "dialogue", speaker: "clock", text: "Every breath that isn't productive is stolen from your future." },
+                { type: "dialogue", speaker: "divija", text: "That's... that's not living. That's just surviving." },
+                { type: "dialogue", speaker: "clock", text: "Survival is all that matters. Keep up or be left behind." },
+                { type: "dialogue", speaker: "divija", text: "But what about joy? What about rest?" },
+                { type: "dialogue", speaker: "clock", text: "LUXURIES FOR THOSE WHO'VE EARNED THEM." },
+                
+                // COMBAT PHASE 2
+                { type: "combat", pattern: "deadlines", duration: 700, phase: "Deadlines" },
+                
+                { type: "dialogue", speaker: "divija", text: "I've been running... for so long." },
+                { type: "dialogue", speaker: "clock", text: "Not fast enough. Never fast enough." },
+                { type: "dialogue", speaker: "divija", text: "But what if... what if I stopped?" },
+                { type: "dialogue", speaker: "clock", text: "Then you FAIL. Everything crumbles. Everyone sees." },
+                { type: "dialogue", speaker: "divija", text: "Or maybe..." },
+                { type: "dialogue", speaker: "divija", text: "Maybe the world keeps turning anyway." },
+                { type: "dialogue", speaker: "divija", text: "Maybe the only one keeping score... is me." },
+                { type: "dialogue", speaker: "clock", text: "You can't just STOP caring about—" },
+                { type: "dialogue", speaker: "divija", text: "I can care about things without being consumed by them." },
+                { type: "dialogue", speaker: "divija", text: "I can work hard AND forgive myself for being human." },
+                
+                // COMBAT PHASE 3
+                { type: "combat", pattern: "running_out", duration: 800, phase: "Running Out" },
+                
+                { type: "dialogue", speaker: "clock", text: "...Why aren't you breaking?" },
+                { type: "dialogue", speaker: "divija", text: "Because time isn't my enemy." },
+                { type: "dialogue", speaker: "divija", text: "It's just... time. It passes whether I panic or not." },
+                { type: "dialogue", speaker: "divija", text: "I'd rather spend it becoming than worrying about becoming fast enough." },
+                { type: "dialogue", speaker: "clock", text: "But... but the pressure—" },
+                { type: "dialogue", speaker: "divija", text: "Pressure is just expectation. Usually someone else's." },
+                { type: "dialogue", speaker: "divija", text: "I'm learning to recognize which expectations are worth carrying." },
+                { type: "dialogue", speaker: "divija", text: "And which ones I need to set down." },
+                { type: "pause", duration: 2000 },
+                { type: "dialogue", speaker: "narrator", text: "The ticking slows. Softens. Becomes the rhythm of a heart at peace." },
+                { type: "dialogue", speaker: "narrator", text: "Time is not your master. It is your companion." },
+            ]
+        },
+
+        // ═══════════════════════════════════════════════════════════
+        // CHAPTER 4: THE MEMORY (The Twist)
+        // ═══════════════════════════════════════════════════════════
+        {
+            id: "memory",
+            title: "THE MEMORY",
+            subtitle: "Some things never really leave",
+            boss: {
+                name: "MEMORY",
+                maxHp: 100,
+                phases: ["Childhood", "Growth", "Understanding"]
+            },
+            sequences: [
+                { type: "dialogue", speaker: "narrator", text: "You emerge into a space that feels... different." },
+                { type: "dialogue", speaker: "narrator", text: "Warm. Golden. Like afternoon sunlight through childhood windows." },
+                { type: "pause", duration: 2000 },
+                { type: "dialogue", speaker: "divija", text: "This place... I know this place." },
+                { type: "dialogue", speaker: "light", text: "Divija." },
+                { type: "pause", duration: 1000 },
+                { type: "dialogue", speaker: "divija", text: "...Dad?" },
+                { type: "dialogue", speaker: "light", text: "Not exactly. I'm the version of him you carry inside." },
+                { type: "dialogue", speaker: "light", text: "Every lesson. Every moment. Every time he believed in you." },
+                { type: "dialogue", speaker: "divija", text: "Why are you here?" },
+                { type: "dialogue", speaker: "light", text: "Because this journey isn't about destroying your demons." },
+                { type: "dialogue", speaker: "light", text: "It's about remembering who you were before they found you." },
+                { type: "dialogue", speaker: "light", text: "And who you still are, underneath all that noise." },
+                { type: "pause", duration: 1500 },
+                { type: "dialogue", speaker: "memory", text: "But I wonder if you remember..." },
+                { type: "dialogue", speaker: "memory", text: "The weight of expectation isn't always external." },
+                { type: "dialogue", speaker: "memory", text: "Sometimes we create our own chains from love." },
+                { type: "dialogue", speaker: "memory", text: "From wanting so badly not to disappoint..." },
+                { type: "dialogue", speaker: "memory", text: "That we forget we were loved unconditionally all along." },
+                
+                // COMBAT PHASE 1 - Gentler, about processing not fighting
+                { type: "combat", pattern: "childhood", duration: 500, phase: "Childhood" },
+                
+                { type: "dialogue", speaker: "light", text: "You were never meant to be perfect, little one." },
+                { type: "dialogue", speaker: "light", text: "You were meant to be loved. Just as you are." },
+                { type: "dialogue", speaker: "divija", text: "But what if I'm not... enough?" },
+                { type: "dialogue", speaker: "light", text: "Enough for what? For who?" },
+                { type: "dialogue", speaker: "light", text: "You were already enough the day you were born." },
+                { type: "dialogue", speaker: "light", text: "Everything since then has just been... bonus." },
+                
+                // COMBAT PHASE 2
+                { type: "combat", pattern: "growth", duration: 500, phase: "Growth" },
+                
+                { type: "dialogue", speaker: "memory", text: "Do you understand now?" },
+                { type: "dialogue", speaker: "memory", text: "The Echo was never your enemy. It was a scared child." },
+                { type: "dialogue", speaker: "memory", text: "The Crowd was never real. Just reflections of fears." },
+                { type: "dialogue", speaker: "memory", text: "Time was never running out. You just forgot to breathe." },
+                { type: "dialogue", speaker: "divija", text: "And you? What are you?" },
+                { type: "dialogue", speaker: "memory", text: "I'm proof that love doesn't disappear." },
+                { type: "dialogue", speaker: "memory", text: "It transforms. It lives inside you." },
+                { type: "dialogue", speaker: "memory", text: "In every choice you make to be kind to yourself." },
+                
+                // COMBAT PHASE 3 - Beautiful, not frightening
+                { type: "combat", pattern: "understanding", duration: 600, phase: "Understanding" },
+                
+                { type: "dialogue", speaker: "light", text: "You've grown so much, Divija." },
+                { type: "dialogue", speaker: "light", text: "Not because you defeated monsters." },
+                { type: "dialogue", speaker: "light", text: "But because you learned they were never monsters at all." },
+                { type: "dialogue", speaker: "divija", text: "I'm still scared sometimes." },
+                { type: "dialogue", speaker: "light", text: "Good. That means you're alive. That means you're trying." },
+                { type: "dialogue", speaker: "light", text: "Courage isn't the absence of fear." },
+                { type: "dialogue", speaker: "light", text: "It's fear that has said its prayers and gotten to work anyway." },
+                { type: "pause", duration: 2000 },
+                { type: "dialogue", speaker: "narrator", text: "The memory doesn't fade. It settles." },
+                { type: "dialogue", speaker: "narrator", text: "Into the foundation of who you are." },
+                { type: "dialogue", speaker: "narrator", text: "A reminder that the light was inside you all along." },
+            ]
+        },
+
+        // ═══════════════════════════════════════════════════════════
+        // CHAPTER 5: THE SELF (Final)
+        // ═══════════════════════════════════════════════════════════
+        {
+            id: "self",
+            title: "THE SELF",
+            subtitle: "The final truth has always been you",
+            boss: {
+                name: "DIVIJA",
+                maxHp: 160,
+                phases: ["Acceptance", "Integration", "Illumination"]
+            },
+            sequences: [
+                { type: "dialogue", speaker: "narrator", text: "At the end of all paths stands a mirror." },
+                { type: "dialogue", speaker: "narrator", text: "In it, you see everything you've been." },
+                { type: "dialogue", speaker: "narrator", text: "And everything you might become." },
+                { type: "pause", duration: 2000 },
+                { type: "dialogue", speaker: "divija", text: "It's... me." },
+                { type: "dialogue", speaker: "narrator", text: "Not the you that doubts. Not the you that fears." },
+                { type: "dialogue", speaker: "narrator", text: "The you that exists when all the noise falls silent." },
+                { type: "dialogue", speaker: "narrator", text: "The you that has been waiting to be seen." },
+                { type: "pause", duration: 1500 },
+                { type: "dialogue", speaker: "divija", text: "I've spent so long fighting myself." },
+                { type: "dialogue", speaker: "narrator", text: "And now?" },
+                { type: "dialogue", speaker: "divija", text: "I think I'm ready to stop." },
+                { type: "dialogue", speaker: "narrator", text: "To stop fighting? Or to stop running?" },
+                { type: "dialogue", speaker: "divija", text: "Both. Neither. I don't know." },
+                { type: "dialogue", speaker: "divija", text: "I just want to... be. Without apology." },
+                
+                // COMBAT PHASE 1 - The final integration
+                { type: "combat", pattern: "acceptance", duration: 600, phase: "Acceptance" },
+                
+                { type: "dialogue", speaker: "narrator", text: "The mirror doesn't attack. It reflects." },
+                { type: "dialogue", speaker: "narrator", text: "Every bullet is a question you've asked yourself." },
+                { type: "dialogue", speaker: "narrator", text: "Every dodge is an answer you're finally giving." },
+                { type: "dialogue", speaker: "divija", text: "Am I good enough?" },
+                { type: "dialogue", speaker: "divija", text: "...Yes. Even when I don't feel like it." },
+                { type: "dialogue", speaker: "divija", text: "Do people really care about me?" },
+                { type: "dialogue", speaker: "divija", text: "...The ones who matter do. That's what makes them matter." },
+                
+                // COMBAT PHASE 2
+                { type: "combat", pattern: "integration", duration: 700, phase: "Integration" },
+                
+                { type: "dialogue", speaker: "divija", text: "Will I ever figure out my life?" },
+                { type: "dialogue", speaker: "divija", text: "...Maybe not. Maybe that's okay." },
+                { type: "dialogue", speaker: "divija", text: "Maybe life isn't a problem to be solved." },
+                { type: "dialogue", speaker: "divija", text: "It's an experience to be lived." },
+                { type: "dialogue", speaker: "narrator", text: "The mirror begins to glow." },
+                { type: "dialogue", speaker: "narrator", text: "Not with judgment. With recognition." },
+                { type: "dialogue", speaker: "narrator", text: "It sees you. Finally. All of you." },
+                
+                // COMBAT PHASE 3 - Beautiful finale
+                { type: "combat", pattern: "illumination", duration: 800, phase: "Illumination" },
+                
+                { type: "dialogue", speaker: "narrator", text: "The light doesn't blind you anymore." },
+                { type: "dialogue", speaker: "narrator", text: "Because you realize you ARE the light." },
+                { type: "dialogue", speaker: "narrator", text: "You always were." },
+                { type: "pause", duration: 2000 },
+                { type: "dialogue", speaker: "divija", text: "I am Divija." },
+                { type: "dialogue", speaker: "divija", text: "I am doubt, and I am courage." },
+                { type: "dialogue", speaker: "divija", text: "I am fear, and I am hope." },
+                { type: "dialogue", speaker: "divija", text: "I am everything I've been afraid of." },
+                { type: "dialogue", speaker: "divija", text: "And everything I've been becoming." },
+                { type: "pause", duration: 1500 },
+                { type: "dialogue", speaker: "narrator", text: "The mirror shatters." },
+                { type: "dialogue", speaker: "narrator", text: "Not into destruction." },
+                { type: "dialogue", speaker: "narrator", text: "Into a thousand points of light." },
+                { type: "dialogue", speaker: "narrator", text: "Each one a version of you that finally found peace." },
+                { type: "pause", duration: 2000 },
+                { type: "end" }
+            ]
         }
-    }
-
-    draw(ctx) {
-        if (this.invuln > 0 && Math.floor(Date.now()/50)%2) return;
-        
-        // Draw Heart
-        ctx.fillStyle = CONFIG.colors.heart;
-        ctx.beginPath();
-        const y = this.y; const x = this.x; const r = this.spriteR;
-        ctx.moveTo(x, y + r/2);
-        ctx.bezierCurveTo(x, y, x - r, y - r, x - r, y);
-        ctx.bezierCurveTo(x - r, y + r, x, y + r*1.5, x, y + r*2);
-        ctx.bezierCurveTo(x, y + r*1.5, x + r, y + r, x + r, y);
-        ctx.bezierCurveTo(x + r, y - r, x, y - r, x, y + r/2);
-        ctx.fill();
-
-        if (Input.isDown('focus')) {
-            ctx.fillStyle = CONFIG.colors.soul;
-            ctx.beginPath(); ctx.arc(this.x, this.y + r, this.r, 0, Math.PI*2); ctx.fill();
-        }
-    }
-}
-
-class Bullet {
-    constructor(x, y, angle, speed, type, color) {
-        this.x = x; this.y = y;
-        this.vx = Math.cos(angle) * speed;
-        this.vy = Math.sin(angle) * speed;
-        this.type = type; // 'player', 'enemy'
-        this.color = color || '#FFF';
-        this.active = true;
-        this.grazed = false;
-        this.timer = 0;
-    }
-    update() {
-        this.x += this.vx; this.y += this.vy;
-        this.timer++;
-        // Bounds
-        if(this.x<-50 || this.x>CONFIG.w+50 || this.y<-50 || this.y>CONFIG.h+50) this.active = false;
-    }
-    draw(ctx) {
-        ctx.fillStyle = this.color;
-        ctx.beginPath();
-        if(this.type === 'player') {
-            ctx.rect(this.x-2, this.y-5, 4, 10);
-        } else {
-            ctx.arc(this.x, this.y, 5, 0, Math.PI*2);
-        }
-        ctx.fill();
-    }
-}
-
-class Effect {
-    constructor(x, y, type) {
-        this.x = x; this.y = y;
-        this.type = type;
-        this.life = 30; this.maxLife = 30;
-        this.vx = (Math.random()-0.5)*4; this.vy = (Math.random()-0.5)*4;
-    }
-    update() { this.x+=this.vx; this.y+=this.vy; this.life--; }
-    draw(ctx) {
-        ctx.globalAlpha = this.life / this.maxLife;
-        if(this.type==='nova') {
-            ctx.strokeStyle = CONFIG.colors.soul;
-            ctx.lineWidth = 3;
-            ctx.beginPath(); ctx.arc(this.x, this.y, (30-this.life)*15, 0, Math.PI*2); ctx.stroke();
-        } else {
-            ctx.fillStyle = this.type==='hit' ? CONFIG.colors.heart : CONFIG.colors.soul;
-            ctx.fillRect(this.x, this.y, 4, 4);
-        }
-        ctx.globalAlpha = 1;
-    }
-}
-
-// --- GAME LOGIC ---
-const Game = {
-    canvas: document.getElementById('gameCanvas'),
-    ctx: null,
-    tick: 0,
-    state: 'MENU', // MENU, INTRO, DIALOGUE, COMBAT, GAMEOVER, WIN
-    
-    player: null,
-    bullets: [],
-    particles: [],
-    arena: { x: 0, y: 0, w: 0, h: 0, targetW: 0, targetH: 0 },
-    shake: 0,
-    
-    // Script & Flow
-    scriptIndex: 0,
-    bossHp: 100,
-    maxBossHp: 100,
-    pattern: null,
-    patternTimer: 0,
-    
-    script: [
-        { t: 'text', f: 'sys', txt: "IDENTITY CONFIRMED: DIVIJA." },
-        { t: 'text', f: 'sys', txt: "VARIABLES: Stubbornness > 99%. Logic < Undefined." },
-        { t: 'text', f: 'heart', txt: "Where am I? Why is it so quiet?" },
-        { t: 'text', f: 'sys', txt: "You are in the Compiler. I am debugging your path." },
-        { t: 'text', f: 'sys', txt: "Survival requires precision. Let us begin." },
-        
-        // PHASE 1: RAIN
-        { t: 'fight', p: 'rain', d: 500, txt: "PHASE 1: THE RAIN" },
-        
-        { t: 'text', f: 'sys', txt: "You dodge the obvious. But can you dodge the confusion?" },
-        { t: 'text', f: 'heart', txt: "I'm not confused. I'm just getting started." },
-
-        // PHASE 2: SINE
-        { t: 'fight', p: 'sine', d: 600, txt: "PHASE 2: THE FREQUENCY" },
-
-        { t: 'text', f: 'sys', txt: "Your heart rate is elevating. Good." },
-        { t: 'text', f: 'heart', txt: "Stop analyzing me! I'm not a math problem." },
-        { t: 'text', f: 'sys', txt: "Everything is a math problem. Even love." },
-
-        // PHASE 3: FLOWER (Rotational)
-        { t: 'fight', p: 'flower', d: 700, txt: "PHASE 3: THE BLOSSOM" },
-
-        { t: 'text', f: 'heart', txt: "Hah... Hah... Is that it?" },
-        { t: 'text', f: 'sys', txt: "You are resilient. Daddy taught you well." },
-        { t: 'text', f: 'heart', txt: "Don't bring him into this!" },
-        { t: 'text', f: 'sys', txt: "He is the constant in your equation. But now, you must stand alone." },
-
-        // PHASE 4: FINAL (Chaos)
-        { t: 'fight', p: 'chaos', d: 900, txt: "FINAL PHASE: THE CALCULUS" },
-        
-        { t: 'win' }
     ],
 
-    init() {
-        this.ctx = this.canvas.getContext('2d');
-        this.canvas.width = CONFIG.w; this.canvas.height = CONFIG.h;
-        Input.init();
-        
-        const loop = () => {
-            this.update();
-            this.draw();
-            requestAnimationFrame(loop);
-        };
-        requestAnimationFrame(loop);
-    },
+    // Ending monologue
+    ending: [
+        "And so, Divija emerged from the space between heartbeats.",
+        "Not unchanged. Not unbroken.",
+        "But whole in ways she never knew she could be.",
+        "",
+        "The Echo became her intuition.",
+        "The Crowd became background noise she learned to tune out.",
+        "The Clock became a friend, reminding her to rest.",
+        "The Memory became her strength.",
+        "And The Self... became home.",
+        "",
+        "This is not a story about defeating darkness.",
+        "It's a story about finding light within it.",
+        "",
+        "Happy Birthday, Divija.",
+        "",
+        "You are loved.",
+        "Not for what you achieve.",
+        "Not for who you might become.",
+        "But for exactly who you are.",
+        "",
+        "Right now.",
+        "In this moment.",
+        "Reading these words.",
+        "",
+        "— With infinite love, Dad"
+    ]
+};
 
-    start() {
-        this.player = new Player();
+// ═══════════════════════════════════════════════════════════════════
+// GAME ENGINE
+// ═══════════════════════════════════════════════════════════════════
+
+class Game {
+    constructor() {
+        this.canvas = document.getElementById('gameCanvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.bgCanvas = document.getElementById('bgCanvas');
+        this.bgCtx = this.bgCanvas.getContext('2d');
+        
+        this.canvas.width = CONFIG.width;
+        this.canvas.height = CONFIG.height;
+        this.bgCanvas.width = CONFIG.width;
+        this.bgCanvas.height = CONFIG.height;
+        
+        this.state = 'title'; // title, chapter, dialogue, combat, gameover, victory
+        this.tick = 0;
+        this.shake = 0;
+        
+        // Player
+        this.player = null;
+        
+        // Combat
         this.bullets = [];
         this.particles = [];
-        this.scriptIndex = 0;
-        this.arena = { x: 300, y: 350, w: 200, h: 150, targetW: 200, targetH: 150 };
+        this.arena = { x: 200, y: 150, w: 500, h: 400 };
         
+        // Story progress
+        this.currentChapter = 0;
+        this.sequenceIndex = 0;
+        this.bossHp = 100;
+        this.maxBossHp = 100;
+        this.patternTimer = 0;
+        this.currentPattern = null;
+        
+        // Dialogue
+        this.dialogueQueue = [];
+        this.currentDialogue = null;
+        this.dialogueCharIndex = 0;
+        this.dialogueComplete = false;
+        this.inputCooldown = 0;
+        
+        // Heartbeat for ambiance
+        this.lastHeartbeat = 0;
+        
+        // Stars background
+        this.stars = [];
+        for (let i = 0; i < 100; i++) {
+            this.stars.push({
+                x: Math.random() * CONFIG.width,
+                y: Math.random() * CONFIG.height,
+                size: Math.random() * 2 + 0.5,
+                speed: Math.random() * 0.5 + 0.1,
+                brightness: Math.random()
+            });
+        }
+    }
+    
+    init() {
+        Input.init();
+        Audio.init();
+        
+        this.loop();
+    }
+    
+    start() {
         document.getElementById('title-screen').classList.add('hidden');
-        document.getElementById('game-over').classList.add('hidden');
         
-        AudioMan.playBGM();
-        Cinematic.start(() => {
-            document.getElementById('ui-layer').style.opacity = 1;
-            this.nextScript();
+        this.player = new Player(CONFIG.width / 2, CONFIG.height - 150);
+        this.currentChapter = 0;
+        this.sequenceIndex = 0;
+        
+        this.showChapterCard(STORY.chapters[0], () => {
+            this.processSequence();
         });
-    },
-
-    nextScript() {
-        if (this.scriptIndex >= this.script.length) return;
-        const s = this.script[this.scriptIndex];
-        this.scriptIndex++;
-
-        if (s.t === 'text') {
-            this.state = 'DIALOGUE';
-            this.arena.targetW = CONFIG.w - 100;
-            this.arena.targetH = 150;
-            this.showDialogue(s.txt, s.f);
-        } else if (s.t === 'fight') {
-            this.state = 'COMBAT';
-            this.pattern = s.p;
-            this.patternTimer = s.d;
-            this.arena.targetW = 500;
-            this.arena.targetH = 450;
-            document.getElementById('dialogue-box').style.display = 'none';
-        } else if (s.t === 'win') {
-            this.state = 'WIN';
-            document.getElementById('victory-screen').classList.remove('hidden');
-        }
-    },
-
-    showDialogue(text, face) {
-        const box = document.getElementById('dialogue-box');
-        const icon = document.getElementById('face-icon');
-        box.style.display = 'block';
-        icon.innerText = face === 'heart' ? '♥' : '⚡';
-        icon.style.color = face === 'heart' ? CONFIG.colors.heart : CONFIG.colors.soul;
+    }
+    
+    showChapterCard(chapter, callback) {
+        const card = document.getElementById('chapter-card');
+        const num = document.getElementById('chapter-num');
+        const title = document.getElementById('chapter-title');
+        const sub = document.getElementById('chapter-sub');
         
-        // Typewriter
-        let i = 0;
-        const el = document.getElementById('dialogue-text');
-        el.innerText = "";
-        this.inputLocked = true;
+        const chapterNum = this.currentChapter === 0 ? 'PROLOGUE' : 
+                          `CHAPTER ${this.currentChapter}`;
         
-        const timer = setInterval(() => {
-            el.innerText += text.charAt(i);
-            i++;
-            if (i % 2 === 0) AudioMan.sfx('text');
-            if (i >= text.length) {
-                clearInterval(timer);
-                this.inputLocked = false;
-            }
-        }, 30);
-    },
-
-    update() {
-        this.tick++;
+        num.textContent = chapterNum;
+        title.textContent = chapter.title;
+        sub.textContent = chapter.subtitle;
         
-        // Arena Lerp
-        const ease = 0.08;
-        this.arena.x = (CONFIG.w - this.arena.w) / 2;
-        this.arena.y = (CONFIG.h - this.arena.h) / 2 + (this.state === 'DIALOGUE' ? 200 : 0);
-        this.arena.w += (this.arena.targetW - this.arena.w) * ease;
-        this.arena.h += (this.arena.targetH - this.arena.h) * ease;
-
-        if (this.shake > 0) { this.shake *= 0.9; if(this.shake < 0.5) this.shake = 0; }
-
-        if (this.state === 'DIALOGUE') {
-            this.player.update(this.arena);
-            if (Input.isDown('fire') && !this.inputLocked && this.tick % 10 === 0) {
-                this.nextScript();
-            }
-        } else if (this.state === 'COMBAT') {
-            this.player.update(this.arena);
-            this.patternTimer--;
+        card.classList.add('active');
+        
+        setTimeout(() => {
+            card.classList.remove('active');
+            setTimeout(callback, 500);
+        }, 3000);
+    }
+    
+    processSequence() {
+        const chapter = STORY.chapters[this.currentChapter];
+        if (!chapter || this.sequenceIndex >= chapter.sequences.length) {
+            // Move to next chapter
+            this.currentChapter++;
+            this.sequenceIndex = 0;
             
-            this.handleSpawner();
-            this.updateBullets();
-
-            // Progress Bar (Time based for survival)
-            if (this.patternTimer <= 0) {
-                this.bullets.forEach(b => b.active = false); // Clear
-                this.nextScript();
+            if (this.currentChapter >= STORY.chapters.length) {
+                this.victory();
+                return;
             }
+            
+            this.showChapterCard(STORY.chapters[this.currentChapter], () => {
+                // Set up boss if exists
+                const newChapter = STORY.chapters[this.currentChapter];
+                if (newChapter.boss) {
+                    this.bossHp = newChapter.boss.maxHp;
+                    this.maxBossHp = newChapter.boss.maxHp;
+                    document.getElementById('boss-name').textContent = newChapter.boss.name;
+                    document.getElementById('boss-stats').style.opacity = '1';
+                }
+                this.processSequence();
+            });
+            return;
         }
-
-        this.particles.forEach((p,i) => {
-            p.update();
-            if(p.life<=0) this.particles.splice(i,1);
-        });
-
-        // UI Updates
-        document.getElementById('hp-fill').style.width = (this.player.hp/this.player.maxHp*100) + '%';
-        document.getElementById('hp-text').innerText = this.player.hp;
-        document.getElementById('tp-fill').style.width = this.player.tp + '%';
-        document.getElementById('tp-text').innerText = Math.floor(this.player.tp) + '%';
-    },
-
-    handleSpawner() {
-        const t = this.tick;
-        const cx = CONFIG.w/2;
-        const cy = this.arena.y + this.arena.h/2 - 100;
-
-        // Difficulty curves
-        if (this.pattern === 'rain') {
-            if (t % 8 === 0) {
-                const x = this.arena.x + Math.random() * this.arena.w;
-                this.bullets.push(new Bullet(x, 0, Math.PI/2, 4 + Math.random()*2, 'enemy', '#0ff'));
-            }
-        } else if (this.pattern === 'sine') {
-            if (t % 15 === 0) {
-                const b = new Bullet(cx, 100, Math.PI/2, 3, 'enemy', '#ff0');
-                b.vx = Math.cos(t/20) * 2;
-                this.bullets.push(b);
-            }
-            if (t % 60 === 0) {
-                // Aimed Shot
-                const angle = Math.atan2(this.player.y - 100, this.player.x - cx);
-                this.bullets.push(new Bullet(cx, 100, angle, 6, 'enemy', '#f00'));
-            }
-        } else if (this.pattern === 'flower') {
-            if (t % 15 === 0) {
-                const petals = 6;
-                const offset = t * 0.1;
-                for (let i = 0; i < petals; i++) {
-                    const angle = (i / petals) * Math.PI * 2 + offset;
-                    this.bullets.push(new Bullet(cx, 150, angle, 3, 'enemy', '#f0f'));
+        
+        const seq = chapter.sequences[this.sequenceIndex];
+        this.sequenceIndex++;
+        
+        switch (seq.type) {
+            case 'dialogue':
+                this.showDialogue(seq.speaker, seq.text);
+                break;
+            case 'pause':
+                setTimeout(() => this.processSequence(), seq.duration);
+                break;
+            case 'combat':
+                this.startCombat(seq.pattern, seq.duration, seq.phase);
+                break;
+            case 'end':
+                this.victory();
+                break;
+        }
+    }
+    
+    showDialogue(speakerId, text) {
+        this.state = 'dialogue';
+        
+        const speaker = STORY.characters[speakerId];
+        const container = document.getElementById('dialogue-container');
+        const nameEl = document.getElementById('speaker-name');
+        const textEl = document.getElementById('dialogue-text');
+        
+        nameEl.textContent = speaker.name;
+        nameEl.style.color = speaker.color;
+        
+        this.currentDialogue = text;
+        this.dialogueCharIndex = 0;
+        this.dialogueComplete = false;
+        textEl.textContent = '';
+        
+        // Draw portrait
+        this.drawPortrait(speakerId);
+        
+        container.classList.add('active');
+        this.inputCooldown = 10;
+    }
+    
+    drawPortrait(speakerId) {
+        const canvas = document.getElementById('portrait-canvas');
+        const ctx = canvas.getContext('2d');
+        const c = STORY.characters[speakerId].color;
+        
+        ctx.clearRect(0, 0, 120, 120);
+        
+        switch(speakerId) {
+            case 'divija':
+                // Heart shape for Divija
+                ctx.fillStyle = c;
+                ctx.beginPath();
+                ctx.moveTo(60, 50);
+                ctx.bezierCurveTo(60, 45, 50, 30, 35, 30);
+                ctx.bezierCurveTo(15, 30, 15, 55, 15, 55);
+                ctx.bezierCurveTo(15, 75, 60, 100, 60, 100);
+                ctx.bezierCurveTo(60, 100, 105, 75, 105, 55);
+                ctx.bezierCurveTo(105, 55, 105, 30, 85, 30);
+                ctx.bezierCurveTo(70, 30, 60, 45, 60, 50);
+                ctx.fill();
+                break;
+                
+            case 'echo':
+                // Fragmented heart
+                ctx.strokeStyle = c;
+                ctx.lineWidth = 2;
+                for (let i = 0; i < 5; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(60 + Math.sin(i) * 20, 50 + Math.cos(i) * 10);
+                    ctx.lineTo(60 + Math.sin(i + 1) * 30, 70 + Math.cos(i + 1) * 20);
+                    ctx.stroke();
+                }
+                ctx.strokeStyle = c;
+                ctx.beginPath();
+                ctx.arc(60, 60, 35, 0, Math.PI * 2);
+                ctx.stroke();
+                break;
+                
+            case 'void':
+                // Spiraling void
+                ctx.strokeStyle = c;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                for (let i = 0; i < 50; i++) {
+                    const angle = i * 0.3;
+                    const r = 5 + i * 0.8;
+                    const x = 60 + Math.cos(angle) * r;
+                    const y = 60 + Math.sin(angle) * r;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+                break;
+                
+            case 'crowd':
+                // Multiple eyes
+                ctx.fillStyle = c;
+                [[40, 40], [80, 40], [60, 70], [30, 70], [90, 70]].forEach(([x, y]) => {
+                    ctx.beginPath();
+                    ctx.ellipse(x, y, 12, 8, 0, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.arc(x, y, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                break;
+                
+            case 'clock':
+                // Clock face
+                ctx.strokeStyle = c;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(60, 60, 40, 0, Math.PI * 2);
+                ctx.stroke();
+                // Hands
+                ctx.beginPath();
+                ctx.moveTo(60, 60);
+                ctx.lineTo(60, 30);
+                ctx.moveTo(60, 60);
+                ctx.lineTo(80, 60);
+                ctx.stroke();
+                break;
+                
+            case 'light':
+            case 'memory':
+                // Warm sun/star
+                ctx.fillStyle = c;
+                ctx.beginPath();
+                ctx.arc(60, 60, 25, 0, Math.PI * 2);
+                ctx.fill();
+                // Rays
+                for (let i = 0; i < 8; i++) {
+                    const angle = (i / 8) * Math.PI * 2;
+                    ctx.beginPath();
+                    ctx.moveTo(60 + Math.cos(angle) * 30, 60 + Math.sin(angle) * 30);
+                    ctx.lineTo(60 + Math.cos(angle) * 45, 60 + Math.sin(angle) * 45);
+                    ctx.strokeStyle = c;
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                }
+                break;
+                
+            default:
+                // Simple circle for narrator
+                ctx.strokeStyle = '#444';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(60, 60, 30, 0, Math.PI * 2);
+                ctx.stroke();
+        }
+    }
+    
+    updateDialogue() {
+        if (this.inputCooldown > 0) this.inputCooldown--;
+        
+        if (!this.dialogueComplete) {
+            if (this.tick % 2 === 0) {
+                const textEl = document.getElementById('dialogue-text');
+                if (this.dialogueCharIndex < this.currentDialogue.length) {
+                    textEl.textContent += this.currentDialogue[this.dialogueCharIndex];
+                    this.dialogueCharIndex++;
+                    
+                    if (this.tick % 4 === 0) {
+                        Audio.play('text');
+                    }
+                } else {
+                    this.dialogueComplete = true;
                 }
             }
-        } else if (this.pattern === 'chaos') {
-            // Spiral + Aimed
-            if (t % 4 === 0) {
-                const angle = t * 0.2;
-                this.bullets.push(new Bullet(cx, 150, angle, 4, 'enemy', '#fff'));
-                this.bullets.push(new Bullet(cx, 150, angle + Math.PI, 4, 'enemy', '#fff'));
-            }
-            if (t % 50 === 0) {
-                const angle = Math.atan2(this.player.y - 150, this.player.x - cx);
-                for(let i=-1; i<=1; i++) {
-                    this.bullets.push(new Bullet(cx, 150, angle + i*0.2, 5, 'enemy', '#f00'));
-                }
-            }
         }
-    },
-
-    updateBullets() {
+        
+        // Skip or continue
+        if (Input.wasPressed('confirm') && this.inputCooldown === 0) {
+            if (!this.dialogueComplete) {
+                // Complete dialogue immediately
+                document.getElementById('dialogue-text').textContent = this.currentDialogue;
+                this.dialogueComplete = true;
+            } else {
+                // Move to next sequence
+                document.getElementById('dialogue-container').classList.remove('active');
+                setTimeout(() => this.processSequence(), 200);
+            }
+            this.inputCooldown = 15;
+        }
+    }
+    
+    startCombat(pattern, duration, phaseName) {
+        this.state = 'combat';
+        this.currentPattern = pattern;
+        this.patternTimer = duration;
+        this.bullets = [];
+        
+        document.getElementById('dialogue-container').classList.remove('active');
+        document.getElementById('phase-name').textContent = phaseName;
+        
+        // Reset player position
+        this.player.x = CONFIG.width / 2;
+        this.player.y = CONFIG.height - 150;
+    }
+    
+    updateCombat() {
+        this.player.update(this.arena);
+        
+        // Pattern spawning
+        this.spawnPattern();
+        
+        // Update bullets
         for (let i = this.bullets.length - 1; i >= 0; i--) {
             const b = this.bullets[i];
             b.update();
             
-            if (!b.active) { this.bullets.splice(i, 1); continue; }
-            if (b.type === 'player') continue; // Enemy collision handled elsewhere if we had enemies
-
-            const dx = b.x - this.player.x;
-            const dy = b.y - (this.player.y + this.player.spriteR); // Offset for heart center
-            const dist = Math.sqrt(dx*dx + dy*dy);
-
-            // Graze
-            if (dist < 35 && !b.grazed && b.type === 'enemy') {
-                b.grazed = true;
-                this.player.tp = Math.min(100, this.player.tp + 2); // Charge Bomb
-                this.particles.push(new Effect(b.x, b.y, 'graze'));
-                AudioMan.sfx('graze');
+            if (!b.active) {
+                this.bullets.splice(i, 1);
+                continue;
             }
-
+            
+            // Collision with player
+            const dx = b.x - this.player.x;
+            const dy = b.y - this.player.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            // Graze
+            if (dist < 25 && !b.grazed) {
+                b.grazed = true;
+                this.player.resolve = Math.min(100, this.player.resolve + 3);
+                this.particles.push(new Particle(b.x, b.y, 'graze'));
+                Audio.play('graze');
+            }
+            
             // Hit
-            if (dist < this.player.r + 5 && b.type === 'enemy') {
-                if (this.player.invuln === 0) {
-                    this.player.hp -= 2; // Damage
-                    this.player.invuln = 50;
-                    this.shake = 15;
-                    this.particles.push(new Effect(this.player.x, this.player.y, 'hit'));
-                    AudioMan.sfx('hit');
-                    b.active = false;
+            if (dist < this.player.hitRadius) {
+                if (this.player.invincible === 0) {
+                    this.player.hp -= 5;
+                    this.player.invincible = 60;
+                    this.shake = 20;
+                    Audio.play('hit');
+                    
+                    for (let j = 0; j < 10; j++) {
+                        this.particles.push(new Particle(this.player.x, this.player.y, 'hit'));
+                    }
                     
                     if (this.player.hp <= 0) {
-                        this.state = 'GAMEOVER';
-                        document.getElementById('game-over').classList.remove('hidden');
+                        this.gameOver();
+                        return;
                     }
                 }
             }
         }
-    },
-
-    clearEnemyBullets() {
+        
+        // Update particles
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            this.particles[i].update();
+            if (this.particles[i].life <= 0) {
+                this.particles.splice(i, 1);
+            }
+        }
+        
+        // Bomb/Resolve
+        if (Input.wasPressed('special') && this.player.resolve >= 100) {
+            this.player.resolve = 0;
+            this.clearBullets();
+            Audio.play('resolve');
+            this.shake = 30;
+            
+            for (let i = 0; i < 50; i++) {
+                this.particles.push(new Particle(this.player.x, this.player.y, 'resolve'));
+            }
+        }
+        
+        // Timer
+        this.patternTimer--;
+        if (this.patternTimer <= 0) {
+            this.bullets = [];
+            setTimeout(() => this.processSequence(), 500);
+        }
+        
+        // Update UI
+        document.getElementById('player-hp').style.width = `${(this.player.hp / this.player.maxHp) * 100}%`;
+        document.getElementById('hp-current').textContent = Math.max(0, this.player.hp);
+        document.getElementById('determination-fill').style.height = `${this.player.resolve}%`;
+        document.getElementById('boss-hp').style.width = `${(this.patternTimer / 800) * 100}%`;
+    }
+    
+    spawnPattern() {
+        const t = this.tick;
+        const cx = CONFIG.width / 2;
+        const cy = 150;
+        
+        switch(this.currentPattern) {
+            case 'whispers':
+                // Gentle falling bullets, like tears
+                if (t % 15 === 0) {
+                    const x = this.arena.x + Math.random() * this.arena.w;
+                    this.bullets.push(new Bullet(x, this.arena.y, Math.PI / 2, 2, CONFIG.colors.echo));
+                }
+                break;
+                
+            case 'accusations':
+                // Aimed shots from the echo
+                if (t % 30 === 0) {
+                    const angle = Math.atan2(this.player.y - cy, this.player.x - cx);
+                    for (let i = -1; i <= 1; i++) {
+                        this.bullets.push(new Bullet(cx, cy, angle + i * 0.2, 4, CONFIG.colors.echo));
+                    }
+                }
+                // Random scatter
+                if (t % 10 === 0) {
+                    this.bullets.push(new Bullet(
+                        this.arena.x + Math.random() * this.arena.w,
+                        this.arena.y,
+                        Math.PI / 2 + (Math.random() - 0.5) * 0.5,
+                        3,
+                        '#00aa66'
+                    ));
+                }
+                break;
+                
+            case 'drowning':
+                // Wave pattern
+                if (t % 8 === 0) {
+                    for (let i = 0; i < 5; i++) {
+                        const x = this.arena.x + (i / 4) * this.arena.w;
+                        const offset = Math.sin(t * 0.05 + i) * 50;
+                        this.bullets.push(new Bullet(x + offset, this.arena.y, Math.PI / 2, 3, CONFIG.colors.echo));
+                    }
+                }
+                break;
+                
+            case 'judgment':
+                // Eyes that fire at you
+                if (t % 20 === 0) {
+                    const positions = [[250, 120], [450, 100], [650, 120]];
+                    positions.forEach(([px, py]) => {
+                        const angle = Math.atan2(this.player.y - py, this.player.x - px);
+                        this.bullets.push(new Bullet(px, py, angle, 5, '#888'));
+                    });
+                }
+                break;
+                
+            case 'comparison':
+                // Spiraling comparison - beautiful but dangerous
+                if (t % 5 === 0) {
+                    const angle = t * 0.1;
+                    this.bullets.push(new Bullet(cx, cy, angle, 3, '#aaaaff'));
+                    this.bullets.push(new Bullet(cx, cy, angle + Math.PI, 3, '#ffaaaa'));
+                }
+                break;
+                
+            case 'isolation':
+                // Closing walls
+                if (t % 12 === 0) {
+                    // From left
+                    this.bullets.push(new Bullet(this.arena.x, this.arena.y + Math.random() * this.arena.h, 0, 2, '#666'));
+                    // From right
+                    this.bullets.push(new Bullet(this.arena.x + this.arena.w, this.arena.y + Math.random() * this.arena.h, Math.PI, 2, '#666'));
+                }
+                break;
+                
+            case 'pressure':
+                // Accelerating bullets
+                if (t % 20 === 0) {
+                    const b = new Bullet(cx, cy, Math.atan2(this.player.y - cy, this.player.x - cx), 2, CONFIG.colors.fear);
+                    b.acceleration = 0.05;
+                    this.bullets.push(b);
+                }
+                if (t % 8 === 0) {
+                    this.bullets.push(new Bullet(
+                        this.arena.x + Math.random() * this.arena.w,
+                        this.arena.y,
+                        Math.PI / 2,
+                        4,
+                        '#ff4444'
+                    ));
+                }
+                break;
+                
+            case 'deadlines':
+                // Clock-like rotating pattern
+                if (t % 3 === 0) {
+                    const angle = t * 0.15;
+                    this.bullets.push(new Bullet(cx, 150, angle, 4, CONFIG.colors.fear));
+                }
+                break;
+                
+            case 'running_out':
+                // Chaotic, frantic
+                if (t % 6 === 0) {
+                    for (let i = 0; i < 3; i++) {
+                        const angle = Math.random() * Math.PI * 2;
+                        this.bullets.push(new Bullet(cx, 150, angle, 3 + Math.random() * 2, '#ff3333'));
+                    }
+                }
+                break;
+                
+            case 'childhood':
+                // Gentle, golden
+                if (t % 25 === 0) {
+                    for (let i = 0; i < 8; i++) {
+                        const angle = (i / 8) * Math.PI * 2;
+                        this.bullets.push(new Bullet(cx, 200, angle, 2, CONFIG.colors.memory));
+                    }
+                }
+                break;
+                
+            case 'growth':
+                // Flower-like blooming
+                if (t % 15 === 0) {
+                    const offset = t * 0.05;
+                    for (let i = 0; i < 6; i++) {
+                        const angle = (i / 6) * Math.PI * 2 + offset;
+                        this.bullets.push(new Bullet(cx, 180, angle, 2.5, CONFIG.colors.warmth));
+                    }
+                }
+                break;
+                
+            case 'understanding':
+                // Stars falling gently
+                if (t % 20 === 0) {
+                    for (let i = 0; i < 3; i++) {
+                        const x = this.arena.x + Math.random() * this.arena.w;
+                        const b = new Bullet(x, this.arena.y, Math.PI / 2, 1.5, CONFIG.colors.memory);
+                        b.spin = 0.1;
+                        this.bullets.push(b);
+                    }
+                }
+                break;
+                
+            case 'acceptance':
+                // Mirror pattern - bullets from both sides
+                if (t % 12 === 0) {
+                    const y = this.arena.y + Math.random() * this.arena.h * 0.7;
+                    this.bullets.push(new Bullet(this.arena.x, y, 0, 3, CONFIG.colors.hope));
+                    this.bullets.push(new Bullet(this.arena.x + this.arena.w, y, Math.PI, 3, CONFIG.colors.hope));
+                }
+                break;
+                
+            case 'integration':
+                // All colors combining
+                if (t % 8 === 0) {
+                    const colors = [CONFIG.colors.echo, CONFIG.colors.hope, CONFIG.colors.memory, CONFIG.colors.soul];
+                    const angle = t * 0.1;
+                    const color = colors[Math.floor(t / 8) % colors.length];
+                    this.bullets.push(new Bullet(cx, 150, angle, 3, color));
+                    this.bullets.push(new Bullet(cx, 150, angle + Math.PI, 3, color));
+                }
+                break;
+                
+            case 'illumination':
+                // Beautiful spiral of light
+                if (t % 4 === 0) {
+                    const angle = t * 0.08;
+                    const r = 20 + (t % 100);
+                    const x = cx + Math.cos(angle) * r;
+                    const y = 200 + Math.sin(angle) * r * 0.5;
+                    this.bullets.push(new Bullet(x, y, angle + Math.PI / 2, 2, CONFIG.colors.memory));
+                }
+                break;
+        }
+    }
+    
+    clearBullets() {
         this.bullets.forEach(b => {
-            if(b.type === 'enemy') {
-                b.active = false;
-                this.particles.push(new Effect(b.x, b.y, 'graze'));
+            this.particles.push(new Particle(b.x, b.y, 'clear'));
+        });
+        this.bullets = [];
+    }
+    
+    gameOver() {
+        this.state = 'gameover';
+        document.getElementById('game-over').classList.remove('hidden');
+    }
+    
+    retry() {
+        document.getElementById('game-over').classList.add('hidden');
+        this.player.hp = this.player.maxHp;
+        this.player.invincible = 60;
+        this.bullets = [];
+        this.state = 'combat';
+    }
+    
+    victory() {
+        this.state = 'victory';
+        
+        const container = document.getElementById('victory-text');
+        container.innerHTML = '';
+        
+        STORY.ending.forEach((line, i) => {
+            const p = document.createElement('p');
+            p.textContent = line;
+            p.style.opacity = '0';
+            p.style.transition = 'opacity 1s ease';
+            p.style.marginBottom = line === '' ? '20px' : '8px';
+            
+            if (line.startsWith('—')) {
+                p.style.color = CONFIG.colors.memory;
+                p.style.marginTop = '30px';
+            }
+            if (line === 'Happy Birthday, Divija.') {
+                p.style.fontSize = '28px';
+                p.style.color = CONFIG.colors.soul;
+            }
+            
+            container.appendChild(p);
+            
+            setTimeout(() => {
+                p.style.opacity = '1';
+            }, 1000 + i * 800);
+        });
+        
+        document.getElementById('victory-screen').classList.remove('hidden');
+    }
+    
+    update() {
+        this.tick++;
+        Input.update();
+        
+        if (this.shake > 0) {
+            this.shake *= 0.9;
+            if (this.shake < 0.5) this.shake = 0;
+        }
+        
+        switch(this.state) {
+            case 'dialogue':
+                this.player.update(this.arena);
+                this.updateDialogue();
+                break;
+            case 'combat':
+                this.updateCombat();
+                break;
+        }
+        
+        // Ambient heartbeat
+        if (this.tick - this.lastHeartbeat > 120 && this.state !== 'title') {
+            Audio.play('heartbeat');
+            this.lastHeartbeat = this.tick;
+        }
+        
+        // Update stars
+        this.stars.forEach(star => {
+            star.y += star.speed;
+            star.brightness = 0.3 + Math.sin(this.tick * 0.02 + star.x) * 0.3;
+            if (star.y > CONFIG.height) {
+                star.y = 0;
+                star.x = Math.random() * CONFIG.width;
             }
         });
-    },
-
+    }
+    
     draw() {
-        this.ctx.fillStyle = CONFIG.colors.bg;
-        this.ctx.fillRect(0, 0, CONFIG.w, CONFIG.h);
-
+        // Clear and draw background
+        this.bgCtx.fillStyle = CONFIG.colors.void;
+        this.bgCtx.fillRect(0, 0, CONFIG.width, CONFIG.height);
+        
+        // Stars
+        this.stars.forEach(star => {
+            this.bgCtx.fillStyle = `rgba(255, 255, 255, ${star.brightness})`;
+            this.bgCtx.beginPath();
+            this.bgCtx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+            this.bgCtx.fill();
+        });
+        
+        // Main canvas
+        this.ctx.clearRect(0, 0, CONFIG.width, CONFIG.height);
+        
         this.ctx.save();
-        // Screen Shake
+        
+        // Screen shake
         if (this.shake > 0) {
-            this.ctx.translate((Math.random()-0.5)*this.shake, (Math.random()-0.5)*this.shake);
+            this.ctx.translate(
+                (Math.random() - 0.5) * this.shake,
+                (Math.random() - 0.5) * this.shake
+            );
         }
-
-        // Arena Outline
-        this.ctx.strokeStyle = '#FFF'; this.ctx.lineWidth = 4;
-        this.ctx.strokeRect(this.arena.x, this.arena.y, this.arena.w, this.arena.h);
-
-        // Clip Content to Arena
-        this.ctx.save();
-        this.ctx.beginPath();
-        this.ctx.rect(this.arena.x, this.arena.y, this.arena.w, this.arena.h);
-        this.ctx.clip();
-
-        // Grid Background (Moving)
-        this.ctx.strokeStyle = 'rgba(255,255,255,0.1)'; this.ctx.lineWidth = 1;
-        const off = (this.tick / 2) % 40;
-        for(let i=0; i<CONFIG.w; i+=40) {
-            this.ctx.beginPath(); this.ctx.moveTo(i, 0); this.ctx.lineTo(i, CONFIG.h); this.ctx.stroke();
-            this.ctx.beginPath(); this.ctx.moveTo(0, i + off); this.ctx.lineTo(CONFIG.w, i + off); this.ctx.stroke();
+        
+        // Draw arena
+        if (this.state === 'combat' || this.state === 'dialogue') {
+            this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            this.ctx.lineWidth = 2;
+            this.ctx.strokeRect(this.arena.x, this.arena.y, this.arena.w, this.arena.h);
+            
+            // Grid inside arena
+            this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            this.ctx.lineWidth = 1;
+            const gridSize = 40;
+            const offset = (this.tick * 0.5) % gridSize;
+            
+            for (let x = this.arena.x; x < this.arena.x + this.arena.w; x += gridSize) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(x, this.arena.y);
+                this.ctx.lineTo(x, this.arena.y + this.arena.h);
+                this.ctx.stroke();
+            }
+            
+            for (let y = this.arena.y; y < this.arena.y + this.arena.h; y += gridSize) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.arena.x, y + offset);
+                this.ctx.lineTo(this.arena.x + this.arena.w, y + offset);
+                this.ctx.stroke();
+            }
         }
-
-        if(this.player) this.player.draw(this.ctx);
-        this.ctx.restore(); // End Clip
-
-        // Bullets drawn ABOVE clip (visual style choice, looks more 3D)
+        
+        // Draw bullets
         this.bullets.forEach(b => b.draw(this.ctx));
+        
+        // Draw particles
         this.particles.forEach(p => p.draw(this.ctx));
         
-        // The Eye (System Boss)
-        if (this.state === 'COMBAT') {
-            const cx = CONFIG.w/2; const cy = this.arena.y - 50;
-            this.ctx.fillStyle = '#000'; this.ctx.strokeStyle = CONFIG.colors.soul;
-            this.ctx.lineWidth = 3;
-            this.ctx.beginPath(); this.ctx.arc(cx, cy, 40, 0, Math.PI*2); this.ctx.fill(); this.ctx.stroke();
-            this.ctx.fillStyle = CONFIG.colors.soul;
-            this.ctx.beginPath(); this.ctx.arc(cx, cy, 15, 0, Math.PI*2); this.ctx.fill();
+        // Draw player
+        if (this.player && (this.state === 'combat' || this.state === 'dialogue')) {
+            this.player.draw(this.ctx, this.tick);
         }
         
-        this.ctx.restore(); // End Shake
+        // Draw boss indicator during combat
+        if (this.state === 'combat') {
+            const cx = CONFIG.width / 2;
+            const cy = 100;
+            
+            // Pulsing indicator
+            const pulse = Math.sin(this.tick * 0.05) * 5;
+            
+            this.ctx.strokeStyle = CONFIG.colors.shadow;
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.arc(cx, cy, 30 + pulse, 0, Math.PI * 2);
+            this.ctx.stroke();
+            
+            this.ctx.fillStyle = CONFIG.colors.shadow;
+            this.ctx.beginPath();
+            this.ctx.arc(cx, cy, 15, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
+        
+        this.ctx.restore();
     }
-};
+    
+    loop() {
+        this.update();
+        this.draw();
+        requestAnimationFrame(() => this.loop());
+    }
+}
 
-// --- EVENTS ---
-document.getElementById('btn-start').addEventListener('click', () => {
-    AudioMan.init();
-    Game.init();
-    Game.start();
+// ═══════════════════════════════════════════════════════════════════
+// PLAYER CLASS
+// ═══════════════════════════════════════════════════════════════════
+
+class Player {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.speed = 5;
+        this.focusSpeed = 2;
+        this.hitRadius = 4;
+        this.visualRadius = 15;
+        
+        this.hp = 100;
+        this.maxHp = 100;
+        this.invincible = 0;
+        this.resolve = 0;
+    }
+    
+    update(arena) {
+        const speed = Input.isDown('focus') ? this.focusSpeed : this.speed;
+        
+        if (Input.isDown('left')) this.x -= speed;
+        if (Input.isDown('right')) this.x += speed;
+        if (Input.isDown('up')) this.y -= speed;
+        if (Input.isDown('down')) this.y += speed;
+        
+        // Clamp to arena
+        this.x = Math.max(arena.x + 10, Math.min(arena.x + arena.w - 10, this.x));
+        this.y = Math.max(arena.y + 10, Math.min(arena.y + arena.h - 10, this.y));
+        
+        if (this.invincible > 0) this.invincible--;
+    }
+    
+    draw(ctx, tick) {
+        if (this.invincible > 0 && Math.floor(tick / 4) % 2 === 0) return;
+        
+        const x = this.x;
+        const y = this.y;
+        const r = this.visualRadius;
+        
+        // Glow effect
+        const gradient = ctx.createRadialGradient(x, y, 0, x, y, r * 2);
+        gradient.addColorStop(0, 'rgba(255, 51, 102, 0.3)');
+        gradient.addColorStop(1, 'rgba(255, 51, 102, 0)');
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(x, y, r * 2, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Heart shape
+        ctx.fillStyle = CONFIG.colors.soul;
+        ctx.beginPath();
+        ctx.moveTo(x, y - r * 0.5);
+        ctx.bezierCurveTo(x, y - r, x - r, y - r, x - r, y - r * 0.3);
+        ctx.bezierCurveTo(x - r, y + r * 0.3, x, y + r, x, y + r);
+        ctx.bezierCurveTo(x, y + r, x + r, y + r * 0.3, x + r, y - r * 0.3);
+        ctx.bezierCurveTo(x + r, y - r, x, y - r, x, y - r * 0.5);
+        ctx.fill();
+        
+        // Focus mode hitbox
+        if (Input.isDown('focus')) {
+            ctx.fillStyle = CONFIG.colors.hope;
+            ctx.beginPath();
+            ctx.arc(x, y, this.hitRadius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.strokeStyle = CONFIG.colors.hope;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(x, y, this.hitRadius + 3, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// BULLET CLASS
+// ═══════════════════════════════════════════════════════════════════
+
+class Bullet {
+    constructor(x, y, angle, speed, color) {
+        this.x = x;
+        this.y = y;
+        this.angle = angle;
+        this.speed = speed;
+        this.color = color;
+        this.active = true;
+        this.grazed = false;
+        this.acceleration = 0;
+        this.spin = 0;
+        this.radius = 6;
+    }
+    
+    update() {
+        this.speed += this.acceleration;
+        this.angle += this.spin;
+        
+        this.x += Math.cos(this.angle) * this.speed;
+        this.y += Math.sin(this.angle) * this.speed;
+        
+        // Bounds check
+        if (this.x < -50 || this.x > CONFIG.width + 50 ||
+            this.y < -50 || this.y > CONFIG.height + 50) {
+            this.active = false;
+        }
+    }
+    
+    draw(ctx) {
+        // Glow
+        const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius * 2);
+        gradient.addColorStop(0, this.color);
+        gradient.addColorStop(1, 'transparent');
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius * 2, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Core
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Bright center
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PARTICLE CLASS
+// ═══════════════════════════════════════════════════════════════════
+
+class Particle {
+    constructor(x, y, type) {
+        this.x = x;
+        this.y = y;
+        this.type = type;
+        this.life = 30;
+        this.maxLife = 30;
+        
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 3 + 1;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+        
+        if (type === 'resolve') {
+            this.life = 60;
+            this.maxLife = 60;
+            this.vx *= 3;
+            this.vy *= 3;
+        }
+    }
+    
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vx *= 0.95;
+        this.vy *= 0.95;
+        this.life--;
+    }
+    
+    draw(ctx) {
+        const alpha = this.life / this.maxLife;
+        
+        switch(this.type) {
+            case 'hit':
+                ctx.fillStyle = `rgba(255, 51, 102, ${alpha})`;
+                break;
+            case 'graze':
+                ctx.fillStyle = `rgba(0, 212, 255, ${alpha})`;
+                break;
+            case 'resolve':
+                ctx.fillStyle = `rgba(0, 255, 200, ${alpha})`;
+                break;
+            case 'clear':
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                break;
+        }
+        
+        const size = (this.type === 'resolve' ? 4 : 3) * (this.life / this.maxLife);
+        ctx.fillRect(this.x - size/2, this.y - size/2, size, size);
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// INITIALIZATION
+// ═══════════════════════════════════════════════════════════════════
+
+const game = new Game();
+
+document.getElementById('start-btn').addEventListener('click', () => {
+    game.init();
+    game.start();
 });
 
-document.getElementById('btn-retry').addEventListener('click', () => {
-    Game.start();
+document.getElementById('retry-btn').addEventListener('click', () => {
+    game.retry();
 });
+
+// Ambient background effect
+setInterval(() => {
+    if (game.state !== 'title') {
+        Audio.play('ambient', { freq: 60 + Math.random() * 40 });
+    }
+}, 3000);
 
 </script>
 </body>
