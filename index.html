@@ -49,7 +49,7 @@
             );
             background-size: 100% 4px;
             pointer-events: none;
-            z-index: 9999; /* Highest priority */
+            z-index: 9999;
             animation: flicker 0.15s infinite;
         }
 
@@ -77,7 +77,7 @@
             z-index: 9998;
         }
 
-        /* --- INTRO SCREEN (The "Entrance") --- */
+        /* --- INTRO SCREEN --- */
         #intro-screen {
             position: fixed;
             top: 0;
@@ -93,7 +93,6 @@
             transition: opacity 2s ease-in-out;
         }
 
-        /* Starfield Animation */
         .stars-container {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -109,7 +108,6 @@
             animation-delay: var(--delay);
         }
 
-        /* Intro Text Styling */
         .intro-content {
             text-align: center;
             color: white;
@@ -125,21 +123,38 @@
             padding: 20px 40px;
             text-transform: uppercase;
         }
-
-        .click-to-start:hover {
-            background: white;
-            color: black;
-        }
+        .click-to-start:hover { background: white; color: black; }
 
         .story-text {
             font-size: 1.5rem;
             opacity: 0;
             transition: opacity 1s;
-            display: none; /* Hidden initially */
+            display: none;
             text-shadow: 0 0 10px white;
         }
 
-        /* --- MAIN CONTAINER (Hidden initially via opacity) --- */
+        /* --- BACKGROUND MEMORY DUST (New Animation) --- */
+        #memory-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1; /* Behind container, in front of body bg */
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .mote {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background-color: rgba(200, 200, 200, 0.4);
+            animation: floatUp var(--duration) linear infinite;
+            bottom: -10px;
+        }
+
+        /* --- MAIN CONTAINER --- */
         .container {
             width: 90%;
             max-width: 1200px;
@@ -150,11 +165,12 @@
             display: flex;
             flex-direction: column;
             box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
-            opacity: 0; /* Starts hidden */
-            transition: opacity 3s ease-in; /* Slow fade in */
+            opacity: 0;
+            transition: opacity 3s ease-in;
+            z-index: 10; /* Above the memory dust */
+            background: rgba(5, 5, 5, 0.7); /* Slight transparency to see dust */
         }
 
-        /* Decoration corners */
         .container::after {
             content: '';
             position: absolute;
@@ -185,7 +201,6 @@
             margin-top: 10px;
         }
 
-        /* --- GAME GRID --- */
         .game-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -194,20 +209,13 @@
             overflow-y: auto;
             padding: 1rem;
         }
+        
+        /* Scrollbar */
+        .game-grid::-webkit-scrollbar { width: 10px; }
+        .game-grid::-webkit-scrollbar-track { background: #111; }
+        .game-grid::-webkit-scrollbar-thumb { background: #fff; border: 2px solid #000; }
 
-        /* Custom Scrollbar */
-        .game-grid::-webkit-scrollbar {
-            width: 10px;
-        }
-        .game-grid::-webkit-scrollbar-track {
-            background: #111;
-        }
-        .game-grid::-webkit-scrollbar-thumb {
-            background: #fff;
-            border: 2px solid #000;
-        }
-
-        /* --- CARD DESIGN --- */
+        /* --- CARDS --- */
         .game-card {
             background: #111;
             border: 2px solid var(--dim-grey);
@@ -220,6 +228,7 @@
             color: var(--term-green);
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
+            z-index: 20;
         }
 
         .game-card:hover {
@@ -229,44 +238,28 @@
             box-shadow: 8px 8px 0px var(--dim-grey);
         }
 
-        /* The Soul (Heart) Icon */
         .soul-icon {
             position: absolute;
-            top: 50%;
-            left: 10px;
+            top: 50%; left: 10px;
             transform: translateY(-50%);
             width: 20px;
             opacity: 0;
             transition: opacity 0.1s;
         }
-        
-        .game-card:hover .soul-icon {
-            opacity: 1;
-            animation: pulse 1s infinite;
-        }
+        .game-card:hover .soul-icon { opacity: 1; animation: pulse 1s infinite; }
 
         .svg-container {
-            width: 120px;
-            height: 120px;
-            margin-bottom: 1rem;
-            filter: grayscale(100%);
+            width: 120px; height: 120px;
+            margin-bottom: 1rem; filter: grayscale(100%);
         }
-
-        /* SVG Styling */
         .game-svg {
-            width: 100%;
-            height: 100%;
-            fill: none;
-            stroke: var(--term-green);
-            stroke-width: 2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
+            width: 100%; height: 100%;
+            fill: none; stroke: var(--term-green);
+            stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
             shape-rendering: geometricPrecision;
         }
-        
         .game-card:hover .game-svg {
-            stroke: #fff;
-            stroke-width: 3;
+            stroke: #fff; stroke-width: 3;
             filter: drop-shadow(0 0 5px rgba(255,255,255,0.5));
         }
 
@@ -277,16 +270,8 @@
             line-height: 1.5;
             margin-bottom: 0.5rem;
         }
-
-        .game-desc {
-            font-size: 1.1rem;
-            text-align: center;
-            color: var(--dim-grey);
-        }
-
-        .game-card:hover .game-desc {
-            color: #aaa;
-        }
+        .game-desc { font-size: 1.1rem; text-align: center; color: var(--dim-grey); }
+        .game-card:hover .game-desc { color: #aaa; }
 
         .status-bar {
             margin-top: auto;
@@ -299,27 +284,13 @@
 
         /* --- ANIMATIONS --- */
         @keyframes flicker {
-            0% { opacity: 0.27861; }
-            5% { opacity: 0.34769; }
-            10% { opacity: 0.23604; }
-            15% { opacity: 0.90626; }
-            20% { opacity: 0.18128; }
-            25% { opacity: 0.83891; }
-            30% { opacity: 0.65583; }
-            35% { opacity: 0.67807; }
-            40% { opacity: 0.26559; }
-            45% { opacity: 0.84693; }
-            50% { opacity: 0.96019; }
-            55% { opacity: 0.08594; }
-            60% { opacity: 0.20313; }
-            65% { opacity: 0.71988; }
-            70% { opacity: 0.53455; }
-            75% { opacity: 0.37288; }
-            80% { opacity: 0.71428; }
-            85% { opacity: 0.70419; }
-            90% { opacity: 0.7003; }
-            95% { opacity: 0.36108; }
-            100% { opacity: 0.24387; }
+            0% { opacity: 0.27; } 5% { opacity: 0.34; } 10% { opacity: 0.23; }
+            15% { opacity: 0.90; } 20% { opacity: 0.18; } 25% { opacity: 0.83; }
+            30% { opacity: 0.65; } 35% { opacity: 0.67; } 40% { opacity: 0.26; }
+            45% { opacity: 0.84; } 50% { opacity: 0.96; } 55% { opacity: 0.08; }
+            60% { opacity: 0.20; } 65% { opacity: 0.71; } 70% { opacity: 0.53; }
+            75% { opacity: 0.37; } 80% { opacity: 0.71; } 85% { opacity: 0.70; }
+            90% { opacity: 0.70; } 95% { opacity: 0.36; } 100% { opacity: 0.24; }
         }
 
         @keyframes pulse {
@@ -329,9 +300,7 @@
         }
         
         @keyframes pulse-text {
-            0% { opacity: 0.5; }
-            50% { opacity: 1; }
-            100% { opacity: 0.5; }
+            0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; }
         }
 
         @keyframes twinkle {
@@ -340,12 +309,16 @@
             100% { opacity: 0; transform: scale(0.5); }
         }
 
-        /* Pixel art heart svg */
-        .heart-path {
-            fill: #fff;
-            stroke: none;
+        /* Rising Mote Animation */
+        @keyframes floatUp {
+            0% { transform: translateY(100vh) translateX(0px); opacity: 0; }
+            10% { opacity: 0.8; }
+            50% { transform: translateY(50vh) translateX(20px); opacity: 0.5; }
+            90% { opacity: 0.8; }
+            100% { transform: translateY(-10vh) translateX(-20px); opacity: 0; }
         }
 
+        .heart-path { fill: #fff; stroke: none; }
     </style>
 </head>
 <body>
@@ -356,15 +329,15 @@
     <!-- INTRO SECTION -->
     <div id="intro-screen">
         <div class="stars-container" id="starfield"></div>
-        
         <div class="intro-content">
-            <div id="start-btn" class="click-to-start">
-                [ INITIALIZE MEMORY ]
-            </div>
+            <div id="start-btn" class="click-to-start">[ INITIALIZE MEMORY ]</div>
             <div id="msg-1" class="story-text">The connection was lost...</div>
             <div id="msg-2" class="story-text">But the Archive remains.</div>
         </div>
     </div>
+
+    <!-- BACKGROUND ANIMATION (Memory Dust) -->
+    <div id="memory-bg"></div>
 
     <!-- MAIN APP -->
     <div class="container" id="main-container">
@@ -374,8 +347,7 @@
         </header>
 
         <div class="game-grid">
-            
-            <!-- Game 1: Architect of Soul -->
+            <!-- Game 1 -->
             <a href="D1.html" class="game-card">
                 <svg class="soul-icon" viewBox="0 0 24 24">
                     <path class="heart-path" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
@@ -390,8 +362,7 @@
                 <div class="game-title">ARCHITECT<br>OF SOUL</div>
                 <div class="game-desc">Build. Ascend. Define.</div>
             </a>
-
-            <!-- Game 2: Echo -->
+            <!-- Game 2 -->
             <a href="D2.html" class="game-card">
                  <svg class="soul-icon" viewBox="0 0 24 24">
                     <path class="heart-path" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
@@ -408,8 +379,7 @@
                 <div class="game-title">ECHO</div>
                 <div class="game-desc">The sound returns... eventually.</div>
             </a>
-
-            <!-- Game 3: Blaster -->
+            <!-- Game 3 -->
             <a href="D3.html" class="game-card">
                  <svg class="soul-icon" viewBox="0 0 24 24">
                     <path class="heart-path" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
@@ -425,8 +395,7 @@
                 <div class="game-title">BLASTER</div>
                 <div class="game-desc">Destroy. Dodge. Survive.</div>
             </a>
-
-            <!-- Game 4: Shattered Reflection -->
+            <!-- Game 4 -->
             <a href="D4.html" class="game-card">
                  <svg class="soul-icon" viewBox="0 0 24 24">
                     <path class="heart-path" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
@@ -443,7 +412,6 @@
                 <div class="game-title">SHATTERED<br>REFLECTION</div>
                 <div class="game-desc">Who are you looking at?</div>
             </a>
-
         </div>
 
         <div class="status-bar">
@@ -454,7 +422,7 @@
     </div>
 
     <script>
-        // --- 1. GENERATE STARFIELD ---
+        // --- 1. GENERATE INTRO STARFIELD ---
         const starfield = document.getElementById('starfield');
         for (let i = 0; i < 50; i++) {
             let star = document.createElement('div');
@@ -469,34 +437,43 @@
             starfield.appendChild(star);
         }
 
-        // --- 2. AUDIO & INTRO SEQUENCE ---
+        // --- 2. GENERATE BACKGROUND MEMORY MOTES (NEW) ---
+        const memoryBg = document.getElementById('memory-bg');
+        for (let i = 0; i < 60; i++) {
+            let mote = document.createElement('div');
+            mote.className = 'mote';
+            mote.style.left = Math.random() * 100 + '%';
+            // Stagger animation delays so they don't all rise at once
+            mote.style.animationDelay = (Math.random() * 10) + 's';
+            // Random speeds
+            mote.style.setProperty('--duration', (Math.random() * 10 + 10) + 's');
+            mote.style.opacity = Math.random() * 0.5 + 0.1;
+            memoryBg.appendChild(mote);
+        }
+
+        // --- 3. AUDIO & SEQUENCE ---
         const startBtn = document.getElementById('start-btn');
         const introScreen = document.getElementById('intro-screen');
         const mainContainer = document.getElementById('main-container');
         const msg1 = document.getElementById('msg-1');
         const msg2 = document.getElementById('msg-2');
         
-        // Define Audio
         const bgm = new Audio('Undertale OST - MEMORY (Build Up Ver.) (Piano & Orchestra Cover).mp3');
         bgm.loop = true;
 
         startBtn.addEventListener('click', () => {
-            // 2a. Start Music Immediately at 00:00:09
             bgm.currentTime = 9;
             bgm.play().then(() => {
-                
-                // 2b. Start Visual Sequence
-                startBtn.style.display = 'none'; // Hide button
+                startBtn.style.display = 'none';
 
-                // Show first message
+                // Message Sequence
                 setTimeout(() => {
                     msg1.style.display = 'block';
                     setTimeout(() => msg1.style.opacity = 1, 100);
                 }, 500);
 
-                // Show second message after a few seconds
                 setTimeout(() => {
-                    msg1.style.opacity = 0; // Fade out first
+                    msg1.style.opacity = 0;
                     setTimeout(() => {
                         msg1.style.display = 'none';
                         msg2.style.display = 'block';
@@ -504,27 +481,25 @@
                     }, 1000);
                 }, 3500);
 
-                // 2c. Reveal Archive
+                // Reveal Main Archive
                 setTimeout(() => {
                     msg2.style.opacity = 0;
                     introScreen.style.opacity = 0;
                     mainContainer.style.opacity = 1;
 
-                    // Remove intro from DOM after fade to prevent clicks
                     setTimeout(() => {
                         introScreen.style.display = 'none';
                     }, 2000);
-                }, 7500); // Adjust this total timing based on preference
+                }, 7500);
 
             }).catch(e => {
                 console.log("Audio failed:", e);
-                // Fallback if audio fails: just show the archive
                 introScreen.style.display = 'none';
                 mainContainer.style.opacity = 1;
             });
         });
 
-        // --- 3. ARCADE CARD INTERACTIONS ---
+        // --- 4. ARCADE INTERACTIONS ---
         const cards = document.querySelectorAll('.game-card');
         cards.forEach(card => {
             card.addEventListener('mouseenter', () => {
