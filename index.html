@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Divija's Game Archive</title>
-    <!-- Prevents 404 error -->
     <link rel="icon" href="data:;base64,iVBORw0KGgo=">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -38,39 +37,69 @@
         }
 
         /* --- LAYERS --- 
-           -1: Memory Dust BG
+           -2: Starfield
+           -1: Memory Dust
             0: Body
            10: Main Container
            99: Vignette
-           100: CRT Scanlines
+           100: CRT Grid (Texture)
            5000: Intro Screen
         */
 
-        /* --- CRT EFFECT --- */
+        /* --- CRT TEXTURE (No moving bar) --- */
         .crt-overlay {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
             background-size: 100% 4px;
             pointer-events: none;
             z-index: 100;
-            animation: flicker 0.15s infinite;
+            opacity: 0.7;
         }
         
-        .crt-overlay::after {
-            content: "";
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 10px;
-            background: rgba(255, 255, 255, 0.05);
-            animation: scan 6s linear infinite;
-        }
-
         .vignette {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            box-shadow: 0 0 150px rgba(0,0,0,0.9) inset;
+            background: radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,1) 100%);
             pointer-events: none;
             z-index: 99;
+        }
+
+        /* --- BACKGROUNDS --- */
+        /* Deep Space Background */
+        #space-bg {
+            position: fixed;
+            top: -10%; left: -10%; width: 120%; height: 120%; /* Larger for parallax */
+            z-index: -2;
+            background: #020202;
+            transition: transform 0.1s ease-out;
+        }
+
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle var(--duration) ease-in-out infinite;
+            opacity: var(--opacity);
+        }
+
+        /* Memory Dust Layer */
+        #memory-bg {
+            position: fixed;
+            top: -5%; left: -5%; width: 110%; height: 110%;
+            z-index: -1; 
+            pointer-events: none;
+            transition: transform 0.2s ease-out; /* Slightly different speed for depth */
+        }
+
+        .mote {
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            bottom: -50px;
+            animation-name: riseAndSway;
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
         }
 
         /* --- INTRO SCREEN --- */
@@ -95,129 +124,93 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 200px; /* Keeps layout stable */
+            min-height: 200px;
         }
 
-        /* The Soul in the Intro */
         .intro-soul {
-            width: 40px;
-            height: 40px;
-            fill: white;
+            width: 40px; height: 40px; fill: white;
             animation: heartbeat 1.5s infinite;
-            margin-bottom: 30px;
-            cursor: pointer;
+            margin-bottom: 30px; cursor: pointer;
             transition: all 0.5s ease;
         }
-        
-        .intro-soul:hover { 
-            transform: scale(1.1); 
-            filter: drop-shadow(0 0 8px white); 
-        }
-
+        .intro-soul:hover { transform: scale(1.1); filter: drop-shadow(0 0 8px white); }
         .intro-soul.activated {
-            transform: scale(3);
-            opacity: 0;
-            filter: drop-shadow(0 0 20px white);
+            transform: scale(3); opacity: 0; filter: drop-shadow(0 0 20px white);
         }
 
         .click-to-start {
-            font-size: 0.8rem;
-            color: #888;
-            margin-top: 20px;
-            animation: pulse-text 2s infinite;
-            transition: opacity 0.5s;
+            font-size: 0.8rem; color: #888; margin-top: 20px;
+            animation: pulse-text 2s infinite; transition: opacity 0.5s;
         }
 
         .typewriter-text {
-            font-size: 1.2rem;
-            line-height: 1.8;
-            height: 2rem;
-            text-shadow: 0 0 10px white;
-            opacity: 1;
-            transition: opacity 1s;
-        }
-
-        /* --- IMPROVED BACKGROUND MEMORY DUST --- */
-        #memory-bg {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1; 
-            overflow: hidden;
-            background: #020202; /* Very deep dark grey */
-        }
-
-        .mote {
-            position: absolute;
-            background-color: rgba(255, 255, 255, 0.8);
-            border-radius: 50%;
-            bottom: -50px; /* Start below screen */
-            animation-name: riseAndSway;
-            animation-timing-function: linear;
-            animation-iteration-count: infinite;
+            font-size: 1.2rem; line-height: 1.8; height: 2rem;
+            text-shadow: 0 0 10px white; opacity: 1; transition: opacity 1s;
         }
 
         /* --- MAIN CONTAINER --- */
         .container {
-            width: 90%;
-            max-width: 1200px;
-            height: 85vh;
+            width: 90%; max-width: 1200px; height: 85vh;
             border: 4px solid var(--border-color);
             padding: 2rem;
             position: relative;
-            display: flex;
-            flex-direction: column;
+            display: flex; flex-direction: column;
             box-shadow: 0 0 30px rgba(255, 255, 255, 0.05);
-            
-            /* Hidden initially */
-            opacity: 0; 
-            transition: opacity 3s ease-in;
+            opacity: 0; transition: opacity 3s ease-in;
             z-index: 10;
-            
-            /* Semi-transparent to show dust behind */
-            background: rgba(0, 0, 0, 0.85); 
-            backdrop-filter: blur(2px);
+            background: rgba(0, 0, 0, 0.7); /* More transparent to see stars/dust */
+            backdrop-filter: blur(3px);
         }
 
         .container::after {
-            content: '';
-            position: absolute;
+            content: ''; position: absolute;
             top: -6px; left: -6px; right: -6px; bottom: -6px;
-            border: 1px solid var(--dim-grey);
-            pointer-events: none;
+            border: 1px solid var(--dim-grey); pointer-events: none;
         }
 
         header {
-            text-align: center;
-            margin-bottom: 2rem;
-            border-bottom: 2px dashed var(--dim-grey);
-            padding-bottom: 1rem;
+            text-align: center; margin-bottom: 2rem;
+            border-bottom: 2px dashed var(--dim-grey); padding-bottom: 1rem;
         }
 
+        /* --- THE DARK GLITCH TITLE --- */
         h1 {
             font-family: 'Press Start 2P', cursive;
             font-size: 2rem;
             text-transform: uppercase;
             letter-spacing: 2px;
-            text-shadow: 4px 4px 0px var(--dim-grey);
             margin: 0;
-            line-height: 1.5;
+            position: relative;
+            display: inline-block;
+        }
+
+        /* Glitch Effect on Hover or Randomly */
+        h1:hover, .glitch-active {
+            animation: glitch-skew 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite;
+        }
+        h1:hover::before, .glitch-active::before {
+            content: attr(data-text);
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            left: 2px; text-shadow: -1px 0 #fff;
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim 2s infinite linear alternate-reverse;
+        }
+        h1:hover::after, .glitch-active::after {
+            content: attr(data-text);
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            left: -2px; text-shadow: -1px 0 #fff;
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim2 2s infinite linear alternate-reverse;
         }
 
         .subtitle {
-            font-size: 1.2rem;
-            color: var(--dim-grey);
-            margin-top: 15px;
+            font-size: 1.2rem; color: var(--dim-grey); margin-top: 15px;
             font-family: 'VT323', monospace;
         }
 
         .game-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 2rem;
-            flex-grow: 1;
-            overflow-y: auto;
-            padding: 1rem;
-            align-items: start;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 2rem; flex-grow: 1; overflow-y: auto; padding: 1rem; align-items: start;
         }
         
         .game-grid::-webkit-scrollbar { width: 8px; }
@@ -226,49 +219,36 @@
 
         /* --- CARDS --- */
         .game-card {
-            background: rgba(17, 17, 17, 0.9);
+            background: rgba(10, 10, 10, 0.8);
             border: 1px solid var(--dim-grey);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: space-between;
-            padding: 2rem 1rem;
-            height: 350px;
-            text-decoration: none;
-            color: var(--term-green);
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: space-between; padding: 2rem 1rem;
+            height: 350px; text-decoration: none; color: var(--term-green);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
+            position: relative; overflow: hidden;
         }
 
         .game-card:hover {
-            border-color: #fff;
-            transform: translateY(-5px);
-            background: #1a1a1a;
+            border-color: #fff; transform: translateY(-5px);
+            background: rgba(20, 20, 20, 0.95);
             box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
         }
 
         .soul-icon {
-            position: absolute;
-            top: 50%; left: 10px;
-            transform: translateY(-50%);
-            width: 20px;
-            opacity: 0;
+            position: absolute; top: 50%; left: 10px;
+            transform: translateY(-50%); width: 20px; opacity: 0;
             transition: opacity 0.2s;
         }
         .game-card:hover .soul-icon { opacity: 1; animation: heartbeat 1s infinite; }
 
         .svg-container {
-            width: 100px; height: 100px;
-            margin-bottom: 1.5rem;
-            opacity: 0.8;
-            transition: opacity 0.3s;
+            width: 100px; height: 100px; margin-bottom: 1.5rem;
+            opacity: 0.8; transition: opacity 0.3s;
         }
         .game-card:hover .svg-container { opacity: 1; }
 
         .game-svg {
-            width: 100%; height: 100%;
-            fill: none; stroke: var(--term-green);
+            width: 100%; height: 100%; fill: none; stroke: var(--term-green);
             stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
         }
         .game-card:hover .game-svg {
@@ -277,43 +257,21 @@
         }
 
         .game-title {
-            font-family: 'Press Start 2P', cursive;
-            font-size: 0.9rem;
-            text-align: center;
-            line-height: 1.6;
-            margin-bottom: 1rem;
-            height: 40px; 
-            display: flex; align-items: center; justify-content: center;
+            font-family: 'Press Start 2P', cursive; font-size: 0.9rem;
+            text-align: center; line-height: 1.6; margin-bottom: 1rem;
+            height: 40px; display: flex; align-items: center; justify-content: center;
         }
         
-        .game-desc { 
-            font-size: 1.1rem; 
-            text-align: center; 
-            color: var(--dim-grey); 
-            font-style: italic;
-        }
+        .game-desc { font-size: 1.1rem; text-align: center; color: var(--dim-grey); font-style: italic; }
         .game-card:hover .game-desc { color: #fff; }
 
         .status-bar {
-            margin-top: auto;
-            border-top: 1px dashed var(--dim-grey);
-            padding-top: 1rem;
-            display: flex;
-            justify-content: space-between;
-            font-size: 1rem;
-            font-family: 'Press Start 2P', cursive;
+            margin-top: auto; border-top: 1px dashed var(--dim-grey);
+            padding-top: 1rem; display: flex; justify-content: space-between;
+            font-size: 1rem; font-family: 'Press Start 2P', cursive;
         }
 
         /* --- ANIMATIONS --- */
-        @keyframes flicker {
-            0% { opacity: 0.97; } 5% { opacity: 0.99; } 10% { opacity: 0.94; }
-            50% { opacity: 0.98; } 100% { opacity: 0.96; }
-        }
-
-        @keyframes scan {
-            0% { top: -10%; } 100% { top: 110%; }
-        }
-
         @keyframes heartbeat {
             0% { transform: translateY(-50%) scale(1); }
             5% { transform: translateY(-50%) scale(1.1); }
@@ -323,24 +281,33 @@
             100% { transform: translateY(-50%) scale(1); }
         }
 
-        @keyframes pulse-text {
-            0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; }
+        @keyframes pulse-text { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+        
+        @keyframes twinkle { 0% { opacity: 0.3; } 50% { opacity: 1; } 100% { opacity: 0.3; } }
+
+        @keyframes riseAndSway {
+            0% { transform: translate(0, 0); opacity: 0; }
+            15% { opacity: var(--max-opacity); }
+            50% { transform: translate(var(--sway), -50vh); }
+            100% { transform: translate(0, -120vh); opacity: 0; }
         }
 
-        /* Improved Drift Animation */
-        @keyframes riseAndSway {
-            0% { 
-                transform: translate(0, 0); 
-                opacity: 0; 
-            }
-            15% { opacity: var(--max-opacity); }
-            50% { 
-                transform: translate(var(--sway), -50vh); 
-            }
-            100% { 
-                transform: translate(0, -120vh); 
-                opacity: 0; 
-            }
+        /* Glitch Keyframes (Dark/Monochrome) */
+        @keyframes glitch-anim {
+            0% { clip: rect(2px, 9999px, 5px, 0); transform: skew(0.85deg); }
+            5% { clip: rect(44px, 9999px, 5px, 0); transform: skew(0.85deg); }
+            10% { clip: rect(10px, 9999px, 60px, 0); transform: skew(-0.85deg); }
+            15% { clip: rect(54px, 9999px, 20px, 0); transform: skew(0.2deg); }
+            20% { clip: rect(22px, 9999px, 80px, 0); transform: skew(0deg); }
+            100% { clip: rect(0, 9999px, 0, 0); transform: skew(0deg); }
+        }
+        @keyframes glitch-anim2 {
+            0% { clip: rect(12px, 9999px, 15px, 0); transform: skew(-0.85deg); }
+            5% { clip: rect(64px, 9999px, 5px, 0); transform: skew(-0.45deg); }
+            10% { clip: rect(1px, 9999px, 10px, 0); transform: skew(0.85deg); }
+            15% { clip: rect(34px, 9999px, 40px, 0); transform: skew(0.1deg); }
+            20% { clip: rect(12px, 9999px, 90px, 0); transform: skew(0deg); }
+            100% { clip: rect(0, 9999px, 0, 0); transform: skew(0deg); }
         }
     </style>
 </head>
@@ -349,26 +316,25 @@
     <div class="crt-overlay"></div>
     <div class="vignette"></div>
 
-    <!-- BACKGROUND: The Memory Void -->
-    <div id="memory-bg"></div>
+    <!-- BACKGROUNDS -->
+    <div id="space-bg"></div> <!-- Stars -->
+    <div id="memory-bg"></div> <!-- Dust -->
 
     <!-- INTRO SECTION -->
     <div id="intro-screen">
         <div class="intro-content">
-            <!-- Clickable Heart -->
             <svg id="start-btn" class="intro-soul" viewBox="0 0 24 24">
                 <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
             </svg>
-            
             <div id="intro-text" class="typewriter-text"></div>
             <div class="click-to-start">[ TOUCH THE SOUL ]</div>
         </div>
     </div>
 
-    <!-- MAIN APP: The Archive -->
+    <!-- MAIN APP -->
     <div class="container" id="main-container">
         <header>
-            <h1>Divija's Game Archive</h1>
+            <h1 data-text="Divija's Game Archive">Divija's Game Archive</h1>
             <div class="subtitle">EST. 202X // SYSTEM READY BY JARED</div>
         </header>
 
@@ -443,21 +409,34 @@
     </div>
 
     <script>
-        // --- 1. GENERATE IMPROVED BACKGROUND MEMORY MOTES ---
+        // --- 1. SETUP BACKGROUND LAYERS ---
+        const spaceBg = document.getElementById('space-bg');
         const memoryBg = document.getElementById('memory-bg');
-        const particleCount = 80;
 
-        for (let i = 0; i < particleCount; i++) {
+        // Generate Starfield
+        for (let i = 0; i < 150; i++) {
+            let star = document.createElement('div');
+            star.className = 'star';
+            star.style.left = Math.random() * 100 + '%';
+            star.style.top = Math.random() * 100 + '%';
+            let size = Math.random() * 2; // Tiny stars
+            star.style.width = size + 'px';
+            star.style.height = size + 'px';
+            star.style.setProperty('--duration', (Math.random() * 3 + 2) + 's');
+            star.style.setProperty('--opacity', Math.random() * 0.7 + 0.3);
+            spaceBg.appendChild(star);
+        }
+
+        // Generate Memory Dust
+        for (let i = 0; i < 80; i++) {
             let mote = document.createElement('div');
             mote.className = 'mote';
-            
-            // Random horizontal position (0 to 100%)
             mote.style.left = Math.random() * 100 + '%';
             
-            // Random size & Blur (Parallax Effect)
+            // Parallax sizing
             let randomScale = Math.random();
             if (randomScale > 0.8) {
-                // Large, fast, blurry (Close to camera)
+                // Large/Close
                 mote.style.width = (Math.random() * 3 + 3) + 'px';
                 mote.style.height = mote.style.width;
                 mote.style.filter = 'blur(1px)';
@@ -465,7 +444,7 @@
                 mote.style.zIndex = 2; 
                 mote.style.setProperty('--duration', (Math.random() * 10 + 10) + 's');
             } else {
-                // Small, slow, sharp (Far away)
+                // Small/Far
                 mote.style.width = (Math.random() * 2 + 1) + 'px';
                 mote.style.height = mote.style.width;
                 mote.style.setProperty('--max-opacity', Math.random() * 0.6 + 0.3);
@@ -473,17 +452,26 @@
                 mote.style.setProperty('--duration', (Math.random() * 20 + 20) + 's');
             }
 
-            // Sway amount (-50px to 50px)
             let sway = (Math.random() * 100 - 50) + 'px';
             mote.style.setProperty('--sway', sway);
-            
-            // Stagger animation start
             mote.style.animationDelay = (Math.random() * -30) + 's'; 
-
             memoryBg.appendChild(mote);
         }
 
-        // --- 2. ROBUST INTRO SEQUENCE LOGIC ---
+        // --- 2. CURSOR INTERACTION (PARALLAX) ---
+        document.addEventListener('mousemove', (e) => {
+            const mouseX = e.clientX / window.innerWidth;
+            const mouseY = e.clientY / window.innerHeight;
+
+            // Move backgrounds opposite to mouse for depth
+            // Stars move slowly (Far away)
+            spaceBg.style.transform = `translate(${mouseX * -20}px, ${mouseY * -20}px)`;
+            
+            // Dust moves faster (Closer)
+            memoryBg.style.transform = `translate(${mouseX * -50}px, ${mouseY * -50}px)`;
+        });
+
+        // --- 3. INTRO SEQUENCE ---
         const startBtn = document.getElementById('start-btn');
         const introScreen = document.getElementById('intro-screen');
         const introTextDiv = document.getElementById('intro-text');
@@ -493,54 +481,51 @@
         const bgm = new Audio('Undertale OST - MEMORY (Build Up Ver.) (Piano & Orchestra Cover).mp3');
         bgm.loop = true;
 
-        // Prevent double-triggering
         let isIntroPlaying = false;
-
-        // Async Sleep Helper
         const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-        // Robust Typewriter using Async/Await
         async function typeText(text) {
-            introTextDiv.innerHTML = ""; // Clear
+            introTextDiv.innerHTML = "";
             introTextDiv.style.opacity = 1;
-            
             for (let i = 0; i < text.length; i++) {
                 introTextDiv.innerHTML += text.charAt(i);
-                await sleep(50); // Typing speed
+                await sleep(50);
             }
         }
+
+        // Random Glitch Trigger for Title
+        const title = document.querySelector('h1');
+        setInterval(() => {
+            if(Math.random() > 0.95) { // 5% chance every 2 seconds
+                title.classList.add('glitch-active');
+                setTimeout(() => title.classList.remove('glitch-active'), 200);
+            }
+        }, 2000);
 
         startBtn.addEventListener('click', async () => {
             if (isIntroPlaying) return;
             isIntroPlaying = true;
 
             try {
-                // 1. Start Audio
                 bgm.currentTime = 9;
                 await bgm.play();
 
-                // 2. Animate Soul Interaction
                 clickPrompt.style.opacity = 0;
                 startBtn.classList.add('activated');
-                await sleep(600); // Wait for soul animation
+                await sleep(600);
                 
-                // Hide soul completely
                 startBtn.style.display = 'none';
                 clickPrompt.style.display = 'none';
 
-                // 3. Play Text Sequence
                 await typeText("The Fade entrenched the earth.");
-                await sleep(2000); // Read time
-
-                // Fade out text 1
+                await sleep(2000);
                 introTextDiv.style.opacity = 0;
-                await sleep(1000); // Fade out time
+                await sleep(1000);
                 await typeText("Yet the Archive remained.");
-                await sleep(2000); // Read time
+                await sleep(2000); 
                 introTextDiv.style.opacity = 0;
                 await sleep(1000); 
 
-                // 4. Reveal Archive
                 introScreen.style.opacity = 0;
                 mainContainer.style.opacity = 1;
 
@@ -549,13 +534,11 @@
 
             } catch (err) {
                 console.error("Intro Error:", err);
-                // Fallback if anything breaks
                 introScreen.style.display = 'none';
                 mainContainer.style.opacity = 1;
             }
         });
 
-        // --- 3. ARCADE INTERACTIONS ---
         const cards = document.querySelectorAll('.game-card');
         cards.forEach(card => {
             card.addEventListener('mouseenter', () => {
