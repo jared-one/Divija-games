@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Blaster | Unlock dream</title>
+    <title>BLASTER | NULL VOID</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
@@ -11,23 +11,18 @@
         :root {
             --void: #050505;
             --void-light: #0a0a0a;
-            --signal: #E0E0E0;
             --math-cyan: #00F3FF;
             --warn-red: #FF2A6D;
             --divine-gold: #FFD700;
             --purple-glow: #9D00FF;
+            --glitch-green: #00FF9D;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
             background: var(--void);
-            color: var(--signal);
+            color: var(--math-cyan);
             font-family: 'JetBrains Mono', monospace;
             overflow: hidden;
             display: flex;
@@ -44,14 +39,11 @@
             aspect-ratio: 16/9;
             background: var(--void-light);
             border: 2px solid var(--math-cyan);
-            box-shadow: 0 0 50px rgba(0, 243, 255, 0.25);
+            box-shadow: 0 0 50px rgba(0, 243, 255, 0.15);
+            overflow: hidden;
         }
 
-        #game-canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
+        canvas { display: block; width: 100%; height: 100%; }
 
         #ui-overlay {
             position: absolute;
@@ -61,1000 +53,741 @@
             flex-direction: column;
             justify-content: space-between;
             padding: 25px;
+            z-index: 10;
         }
 
-        .hud-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-        }
+        .hud-top { display: flex; justify-content: space-between; align-items: flex-start; }
 
-        .score-display {
-            font-size: 12px;
-            color: var(--math-cyan);
-            letter-spacing: 0.15em;
-        }
+        .score-block { text-align: left; }
+        .level-display { color: var(--warn-red); font-size: 10px; letter-spacing: 0.2em; margin-bottom: 5px; }
+        .score-value { font-size: 28px; font-weight: 700; color: var(--divine-gold); text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
 
-        .score-value {
-            color: var(--divine-gold);
-            font-size: 28px;
-            font-weight: 700;
-            margin-top: 5px;
-        }
-
-        .entropy-section {
-            text-align: right;
-        }
-
+        .entropy-section { text-align: right; }
         .entropy-bar {
-            width: 220px;
-            height: 10px;
-            background: rgba(255, 255, 255, 0.08);
-            border-radius: 5px;
-            overflow: hidden;
-            border: 1px solid rgba(0, 243, 255, 0.2);
+            width: 200px; height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--math-cyan);
+            margin-bottom: 5px;
         }
-
         .entropy-fill {
             height: 100%;
-            background: linear-gradient(90deg, var(--math-cyan), var(--warn-red));
-            transition: width 0.4s ease, filter 0.4s ease;
-        }
-
-        .entropy-fill.low {
-            background: linear-gradient(90deg, var(--divine-gold), var(--math-cyan));
-            filter: drop-shadow(0 0 10px var(--divine-gold));
-        }
-
-        .entropy-label {
-            font-size: 10px;
-            color: var(--math-cyan);
-            margin-top: 6px;
-            letter-spacing: 0.1em;
-        }
-
-        .entropy-value {
-            color: var(--warn-red);
-            font-weight: 700;
-        }
-
-        .entropy-value.stable {
-            color: var(--divine-gold);
-        }
-
-        #start-screen, #game-over-screen, #win-screen {
-            position: absolute;
-            inset: 0;
-            background: rgba(5, 5, 5, 0.97);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            pointer-events: auto;
-            z-index: 100;
-        }
-
-        #game-over-screen, #win-screen {
-            display: none;
-        }
-
-        .screen-title {
-            font-family: 'Cinzel', serif;
-            font-size: clamp(2.5rem, 7vw, 5rem);
-            color: var(--math-cyan);
-            text-align: center;
-            margin-bottom: 1rem;
-            text-shadow: 0 0 30px var(--math-cyan);
-            letter-spacing: 0.1em;
-        }
-
-        .screen-subtitle {
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.7);
-            text-align: center;
-            max-width: 550px;
-            line-height: 2;
-            margin-bottom: 2.5rem;
-            padding: 0 30px;
-        }
-
-        .game-btn {
-            background: transparent;
-            border: 2px solid var(--math-cyan);
-            color: var(--math-cyan);
-            padding: 18px 50px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 14px;
-            letter-spacing: 0.25em;
-            text-transform: uppercase;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .game-btn::before {
-            content: '';
-            position: absolute;
-            inset: 0;
             background: var(--math-cyan);
-            transform: scaleX(0);
-            transform-origin: right;
-            transition: transform 0.4s ease;
-            z-index: -1;
+            box-shadow: 0 0 10px var(--math-cyan);
+            transition: width 0.1s linear;
         }
+        .entropy-fill.crit { background: var(--warn-red); box-shadow: 0 0 15px var(--warn-red); }
 
-        .game-btn:hover, .game-btn:active {
-            color: var(--void);
-            box-shadow: 0 0 40px var(--math-cyan);
-        }
-
-        .game-btn:hover::before, .game-btn:active::before {
-            transform: scaleX(1);
-            transform-origin: left;
-        }
-
-        .controls-hint {
-            margin-top: 2.5rem;
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.4);
-            letter-spacing: 0.05em;
-        }
-
-        .controls-hint span {
-            color: var(--divine-gold);
-            padding: 3px 8px;
-            border: 1px solid rgba(255, 215, 0, 0.3);
-            border-radius: 3px;
-            margin: 0 3px;
-        }
-
-        #game-over-screen .screen-title {
-            color: var(--warn-red);
-            text-shadow: 0 0 30px var(--warn-red);
-        }
-
-        #win-screen .screen-title {
-            color: var(--divine-gold);
-            text-shadow: 0 0 40px var(--divine-gold);
-        }
-
-        .win-message {
-            font-family: 'Cinzel', serif;
-            font-size: 20px;
-            color: var(--divine-gold);
-            text-align: center;
-            margin: 1.5rem 0;
-            letter-spacing: 0.15em;
-        }
-
-        .punchline {
-            font-size: 26px;
-            color: var(--math-cyan);
-            text-shadow: 2px 2px var(--warn-red), -1px -1px var(--purple-glow);
-            margin: 1.5rem 0 2rem;
-            font-weight: 700;
-            letter-spacing: 0.1em;
-        }
-
-        .collected-symbols {
-            display: flex;
-            gap: 15px;
-            margin: 1rem 0;
-            font-size: 24px;
-            color: var(--divine-gold);
-        }
-
-        /* Mobile touch controls */
-        .touch-controls {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: none;
+        /* SCREENS */
+        #start-screen, #game-over-screen, #win-screen, #level-screen {
+            position: absolute; inset: 0;
+            background: rgba(5, 5, 5, 0.95);
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 100;
             pointer-events: auto;
+            backdrop-filter: blur(5px);
         }
 
-        .d-pad {
-            display: grid;
-            grid-template-columns: repeat(3, 50px);
-            grid-template-rows: repeat(3, 50px);
-            gap: 5px;
-        }
+        #level-screen { background: rgba(5,5,5,0.8); pointer-events: none; display: none; }
 
-        .d-btn {
-            background: rgba(0, 243, 255, 0.15);
-            border: 1px solid rgba(0, 243, 255, 0.4);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
+        h1 {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(3rem, 8vw, 6rem);
             color: var(--math-cyan);
-            user-select: none;
+            text-shadow: 4px 4px 0px var(--purple-glow);
+            margin-bottom: 1rem;
+            letter-spacing: 0.1em;
+            text-align: center;
         }
 
-        .d-btn:active {
-            background: rgba(0, 243, 255, 0.35);
+        p { color: #aaa; margin-bottom: 2rem; text-align: center; line-height: 1.6; max-width: 600px; padding: 0 20px; }
+        
+        button {
+            background: transparent;
+            color: var(--math-cyan);
+            border: 2px solid var(--math-cyan);
+            padding: 15px 40px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            letter-spacing: 0.2em;
+            transition: 0.3s;
+            text-transform: uppercase;
         }
 
-        .d-btn.up { grid-column: 2; grid-row: 1; }
-        .d-btn.left { grid-column: 1; grid-row: 2; }
-        .d-btn.right { grid-column: 3; grid-row: 2; }
-        .d-btn.down { grid-column: 2; grid-row: 3; }
+        button:hover { background: var(--math-cyan); color: var(--void); box-shadow: 0 0 30px var(--math-cyan); }
+
+        .punchline { font-size: 1.5rem; color: var(--warn-red); margin-top: 1rem; font-weight: bold; text-shadow: 0 0 10px var(--warn-red); }
+
+        /* Touch Controls */
+        #touch-controls {
+            display: none; position: absolute; bottom: 20px; left: 50%;
+            transform: translateX(-50%); pointer-events: auto;
+        }
+        .d-pad {
+            display: grid; grid-template-columns: repeat(3, 60px); grid-template-rows: repeat(2, 60px); gap: 8px;
+        }
+        .d-btn {
+            border: 1px solid var(--math-cyan); color: var(--math-cyan);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; border-radius: 8px; background: rgba(0, 243, 255, 0.05);
+        }
+        .d-btn:active { background: var(--math-cyan); color: black; }
+        .up { grid-column: 2; grid-row: 1; }
+        .left { grid-column: 1; grid-row: 2; }
+        .down { grid-column: 2; grid-row: 2; }
+        .right { grid-column: 3; grid-row: 2; }
 
         @media (max-width: 768px) {
-            #game-container {
-                aspect-ratio: 3/4;
-                max-width: 100%;
-                height: 100vh;
-            }
-            
-            .entropy-bar {
-                width: 150px;
-            }
+            #game-container { aspect-ratio: 3/4; height: 100vh; max-width: 100%; border: none; }
+            #touch-controls { display: block; }
+            h1 { font-size: 3rem; }
+        }
 
-            .touch-controls {
-                display: block;
-            }
-
-            .controls-hint {
-                display: none;
-            }
+        .vol-btn {
+            position: absolute; top: 20px; right: 20px;
+            border: 1px solid var(--math-cyan); color: var(--math-cyan);
+            padding: 5px 10px; font-size: 10px; cursor: pointer; z-index: 200;
+            background: rgba(0,0,0,0.5); pointer-events: auto;
         }
     </style>
-<base target="_blank">
 </head>
 <body>
     <div id="game-container">
         <canvas id="game-canvas"></canvas>
-        
+        <button id="mute-btn" class="vol-btn">AUDIO: OFF</button>
+
         <div id="ui-overlay">
             <div class="hud-top">
-                <div class="score-display">
-                    <div>DIVINE CONSTANTS</div>
-                    <div class="score-value"><span id="score">0</span> / 7</div>
+                <div class="score-block">
+                    <div class="level-display">DIMENSION <span id="level-val">1</span></div>
+                    <div class="score-value"><span id="score">0</span> / <span id="max-score">7</span></div>
                 </div>
                 <div class="entropy-section">
-                    <div class="entropy-bar">
-                        <div class="entropy-fill" id="entropy-fill" style="width: 100%"></div>
-                    </div>
-                    <div class="entropy-label">ENTROPY: <span class="entropy-value" id="entropy-value">100</span>%</div>
+                    <div class="entropy-bar"><div class="entropy-fill" id="entropy-fill"></div></div>
+                    <div style="font-size: 10px; letter-spacing: 0.1em;">SYSTEM STABILITY</div>
                 </div>
             </div>
-            
-            <div class="touch-controls" id="touch-controls">
+
+            <div id="touch-controls">
                 <div class="d-pad">
-                    <div class="d-btn up" data-dir="up">▲</div>
-                    <div class="d-btn left" data-dir="left">◀</div>
-                    <div class="d-btn right" data-dir="right">▶</div>
-                    <div class="d-btn down" data-dir="down">▼</div>
+                    <div class="d-btn up" data-key="ArrowUp">▲</div>
+                    <div class="d-btn left" data-key="ArrowLeft">◀</div>
+                    <div class="d-btn down" data-key="ArrowDown">▼</div>
+                    <div class="d-btn right" data-key="ArrowRight">▶</div>
                 </div>
             </div>
         </div>
 
         <div id="start-screen">
-            <h1 class="screen-title">BLASTER</h1>
-            <p class="screen-subtitle">
-                The Chaos Field has scattered the Divine Constants.<br>
-                Guide Divija through entropy to restore mathematical order.<br>
-                <br>
-                <span style="color: var(--divine-gold)">Collect all 7 symbols. Avoid the Corruption.</span>
-            </p>
-            <button class="game-btn" id="start-btn">INITIALIZE</button>
-            <p class="controls-hint">Move with <span>ARROWS</span> or <span>WASD</span></p>
+            <h1>BLASTER</h1>
+            <p>The Void is unstable.<br>Collect the Divine Constants to restore order.<br>Avoid the corruption. Survive 3 Dimensions.</p>
+            <button id="start-btn">INITIALIZE SYSTEM</button>
+            <p style="font-size: 10px; margin-top: 20px; opacity: 0.6">HEADPHONES RECOMMENDED</p>
         </div>
 
-        <div id="game-over-screen">
-            <h1 class="screen-title">ENTROPY CONSUMED</h1>
-            <p class="screen-subtitle">The equation collapsed into chaos.</p>
-            <button class="game-btn" id="retry-btn">RETRY SEQUENCE</button>
+        <div id="level-screen">
+            <h1 style="font-size: 4rem" id="level-title">DIMENSION 2</h1>
+            <p style="color: var(--divine-gold)">THREAT LEVEL INCREASING</p>
         </div>
 
-        <div id="win-screen">
-            <h1 class="screen-title">EQUATION STABILIZED</h1>
-            <div class="collected-symbols" id="collected-symbols"></div>
-            <p class="win-message">All Divine Constants Restored</p>
+        <div id="game-over-screen" style="display: none;">
+            <h1 style="color: var(--warn-red)">FAILURE</h1>
+            <p>Entropy has consumed the equation.</p>
+            <button id="retry-btn">REBOOT</button>
+        </div>
+
+        <div id="win-screen" style="display: none;">
+            <h1 style="color: var(--divine-gold)">HARMONIZED</h1>
+            <p>All Dimensions Stabilized.</p>
             <p class="punchline">I will always be DADDY</p>
-            <button class="game-btn" id="play-again-btn">PLAY AGAIN</button>
+            <button id="play-again-btn">NEW CYCLE</button>
         </div>
     </div>
 
     <script>
-    /**
-     * DIVINE EQUATION - Final Draft
-     * Functional Programming Architecture
-     * Procedurally generated graphics (no external assets)
-     * Features: Screen shake, enhanced particles, touch controls, refined AI
-     */
+        /**
+         * BLASTER: NULL VOID EDITION
+         * Procedural Audio & Functional Physics Engine
+         */
 
-    // ===== FUNCTIONAL UTILITIES =====
-    const pipe = (...fns) => x => fns.reduce((v, f) => f(v), x);
-    const curry = fn => (...args) => args.length >= fn.length ? fn(...args) : curry(fn.bind(null, ...args));
-    const clamp = (min, max) => v => Math.min(Math.max(v, min), max);
-    const lerp = (a, b, t) => a + (b - a) * t;
-    const dist = (x1, y1, x2, y2) => Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
-    const random = (min, max) => Math.random() * (max - min) + min;
-    const randomInt = (min, max) => Math.floor(random(min, max + 1));
-    const normalize = (x, y) => {
-        const d = Math.sqrt(x * x + y * y);
-        return d > 0 ? { x: x / d, y: y / d } : { x: 0, y: 0 };
-    };
-    const easeOut = t => 1 - Math.pow(1 - t, 3);
-    const easeIn = t => t * t * t;
+        // --- MATH & UTILS ---
+        const R = (min, max) => Math.random() * (max - min) + min;
+        const RI = (min, max) => Math.floor(R(min, max + 1));
+        const LERP = (a, b, t) => a + (b - a) * t;
+        const DIST = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+        const CLAMP = (v, min, max) => Math.min(Math.max(v, min), max);
 
-    // ===== GAME CONFIGURATION =====
-    const CONFIG = {
-        player: {
-            speed: 6,
-            size: 18,
-            friction: 0.93,
-            acceleration: 1.0
-        },
-        collectibles: 7,
-        enemies: {
-            count: 6,
-            baseSpeed: 1.1,
-            maxSpeed: 3.8,
-            size: 14
-        },
-        particles: {
-            bgCount: 120,
-            effectCount: 40
-        },
-        shake: {
-            duration: 15,
-            intensity: 8
-        },
-        colors: {
-            player: '#00F3FF',
-            playerGlow: 'rgba(0, 243, 255, 0.5)',
-            collectible: '#FFD700',
-            collectibleGlow: 'rgba(255, 215, 0, 0.6)',
-            enemy: '#FF2A6D',
-            enemyGlow: 'rgba(255, 42, 109, 0.4)'
-        }
-    };
-
-    // ===== CANVAS SETUP =====
-    const canvas = document.getElementById('game-canvas');
-    const ctx = canvas.getContext('2d', { alpha: false });
-    
-    let width, height;
-    const resize = () => {
-        const rect = canvas.parentElement.getBoundingClientRect();
-        width = canvas.width = rect.width;
-        height = canvas.height = rect.height;
-    };
-    resize();
-    window.addEventListener('resize', resize);
-
-    // ===== SCREEN SHAKE SYSTEM =====
-    const ScreenShake = (() => {
-        let shakeAmount = 0;
-        let shakeDecay = 0;
-        
-        const trigger = (intensity = CONFIG.shake.intensity, duration = CONFIG.shake.duration) => {
-            shakeAmount = intensity;
-            shakeDecay = intensity / duration;
-        };
-        
-        const update = () => {
-            if (shakeAmount > 0) {
-                shakeAmount -= shakeDecay;
-                if (shakeAmount < 0) shakeAmount = 0;
-            }
-            return shakeAmount;
-        };
-        
-        const getOffset = () => ({
-            x: (Math.random() - 0.5) * shakeAmount * 2,
-            y: (Math.random() - 0.5) * shakeAmount * 2
-        });
-        
-        return { trigger, update, getOffset };
-    })();
-
-    // ===== INPUT HANDLING =====
-    const Input = (() => {
-        const keys = {};
-        const pressed = {};
-        
-        window.addEventListener('keydown', e => {
-            const key = e.key.toLowerCase();
-            if (!keys[key]) pressed[key] = true;
-            keys[key] = true;
-        });
-        
-        window.addEventListener('keyup', e => {
-            keys[e.key.toLowerCase()] = false;
-        });
-
-        // Touch controls
-        const touchBtns = document.querySelectorAll('.d-btn');
-        touchBtns.forEach(btn => {
-            const dir = btn.dataset.dir;
+        // --- AUDIO ENGINE (Procedural) ---
+        const Audio = (() => {
+            let ctx = null;
+            let masterGain = null;
+            let isMuted = true;
+            let isPlaying = false;
+            let nextNoteTime = 0;
+            let noteIndex = 0;
             
-            const start = () => {
-                if (dir === 'up') keys['arrowup'] = true;
-                if (dir === 'down') keys['arrowdown'] = true;
-                if (dir === 'left') keys['arrowleft'] = true;
-                if (dir === 'right') keys['arrowright'] = true;
+            // Musical Constants
+            const TEMPO = 110;
+            const LOOKAHEAD = 25.0;
+            const SCHEDULE_AHEAD = 0.1;
+            const SCALE = [146.83, 174.61, 220.00, 261.63, 130.81]; // D minor pentatonic-ish bass
+
+            const init = () => {
+                if (ctx) return;
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                ctx = new AudioContext();
+                masterGain = ctx.createGain();
+                masterGain.gain.value = 0.4;
+                masterGain.connect(ctx.destination);
             };
-            
-            const end = () => {
-                if (dir === 'up') keys['arrowup'] = false;
-                if (dir === 'down') keys['arrowdown'] = false;
-                if (dir === 'left') keys['arrowleft'] = false;
-                if (dir === 'right') keys['arrowright'] = false;
-            };
-            
-            btn.addEventListener('touchstart', e => { e.preventDefault(); start(); });
-            btn.addEventListener('touchend', e => { e.preventDefault(); end(); });
-            btn.addEventListener('mousedown', start);
-            btn.addEventListener('mouseup', end);
-            btn.addEventListener('mouseleave', end);
-        });
-        
-        return {
-            isDown: key => keys[key.toLowerCase()] || false,
-            wasPressed: key => {
-                const p = pressed[key.toLowerCase()];
-                pressed[key.toLowerCase()] = false;
-                return p;
-            },
-            getDirection: () => ({
-                x: (keys['arrowright'] || keys['d'] ? 1 : 0) - (keys['arrowleft'] || keys['a'] ? 1 : 0),
-                y: (keys['arrowdown'] || keys['s'] ? 1 : 0) - (keys['arrowup'] || keys['w'] ? 1 : 0)
-            })
-        };
-    })();
 
-    // ===== ENHANCED PARTICLE SYSTEMS =====
-    const createParticle = (x, y, type, angle = null) => {
-        const speed = type === 'collect' ? random(2, 5) : random(3, 7);
-        const dir = angle !== null ? angle : random(0, Math.PI * 2);
-        return {
-            x, y,
-            vx: Math.cos(dir) * speed,
-            vy: Math.sin(dir) * speed,
-            life: 1,
-            decay: random(0.015, 0.035),
-            size: random(2, 6),
-            type,
-            rotation: random(0, Math.PI * 2),
-            rotSpeed: random(-0.2, 0.2)
-        };
-    };
-
-    const EffectParticles = (() => {
-        let particles = [];
-        
-        const spawn = (x, y, count, type) => {
-            for (let i = 0; i < count; i++) {
-                const angle = (i / count) * Math.PI * 2;
-                particles.push(createParticle(x, y, type, type === 'collect' ? angle : null));
-            }
-        };
-        
-        const spawnBurst = (x, y, count, type) => {
-            for (let i = 0; i < count; i++) {
-                particles.push(createParticle(x, y, type));
-            }
-        };
-        
-        const update = () => {
-            particles = particles.filter(p => {
-                p.x += p.vx;
-                p.y += p.vy;
-                p.life -= p.decay;
-                p.vx *= 0.96;
-                p.vy *= 0.96;
-                p.rotation += p.rotSpeed;
-                return p.life > 0;
-            });
-        };
-        
-        const draw = () => {
-            particles.forEach(p => {
-                const alpha = easeOut(p.life);
-                ctx.save();
-                ctx.translate(p.x, p.y);
-                ctx.rotate(p.rotation);
-                
-                if (p.type === 'collect') {
-                    ctx.fillStyle = CONFIG.colors.collectible;
-                    ctx.globalAlpha = alpha;
-                    ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+            const toggle = () => {
+                if (!ctx) init();
+                if (ctx.state === 'suspended') ctx.resume();
+                isMuted = !isMuted;
+                if (!isMuted) {
+                    masterGain.gain.setTargetAtTime(0.4, ctx.currentTime, 0.1);
+                    isPlaying = true;
+                    scheduler();
                 } else {
-                    ctx.fillStyle = CONFIG.colors.enemy;
-                    ctx.globalAlpha = alpha;
-                    ctx.beginPath();
-                    ctx.arc(0, 0, p.size/2, 0, Math.PI * 2);
-                    ctx.fill();
+                    masterGain.gain.setTargetAtTime(0, ctx.currentTime, 0.1);
+                    isPlaying = false;
                 }
+                return !isMuted;
+            };
+
+            // Synthesizers
+            const playBass = (time, freq) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                const filter = ctx.createBiquadFilter();
+
+                osc.type = 'sawtooth';
+                osc.frequency.value = freq / 2; // Sub bass
+
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(200, time);
+                filter.frequency.exponentialRampToValueAtTime(800, time + 0.1);
+                filter.frequency.exponentialRampToValueAtTime(200, time + 0.4);
+
+                gain.gain.setValueAtTime(0.4, time);
+                gain.gain.exponentialRampToValueAtTime(0.01, time + 0.5);
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(masterGain);
+
+                osc.start(time);
+                osc.stop(time + 0.5);
+            };
+
+            const playArp = (time, freq) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
                 
-                ctx.restore();
-            });
-            ctx.globalAlpha = 1;
-        };
-        
-        return { spawn, spawnBurst, update, draw };
-    })();
-
-    const BackgroundParticles = (() => {
-        const particles = Array.from({ length: CONFIG.particles.bgCount }, () => ({
-            x: random(0, 1000),
-            y: random(0, 1000),
-            vx: random(-0.4, 0.4),
-            vy: random(-0.4, 0.4),
-            size: random(1, 4),
-            alpha: random(0.2, 0.9),
-            pulse: random(0, Math.PI * 2)
-        }));
-
-        const update = (entropy, time) => {
-            const speedMult = 1 + entropy * 2.5;
-            particles.forEach(p => {
-                p.x += p.vx * speedMult;
-                p.y += p.vy * speedMult;
-                p.pulse += 0.05;
+                osc.type = 'square';
+                osc.frequency.value = freq * 2;
                 
-                if (p.x < 0) p.x = 1000;
-                if (p.x > 1000) p.x = 0;
-                if (p.y < 0) p.y = 1000;
-                if (p.y > 1000) p.y = 0;
-            });
-        };
+                gain.gain.setValueAtTime(0.05, time);
+                gain.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
 
-        const draw = (entropy, time) => {
-            const color = entropy > 0.5 ? '#FF2A6D' : '#00F3FF';
-            particles.forEach(p => {
-                const screenX = (p.x / 1000) * width;
-                const screenY = (p.y / 1000) * height;
-                const pulseAlpha = p.alpha * (0.5 + Math.sin(p.pulse) * 0.3);
-                ctx.fillStyle = color;
-                ctx.globalAlpha = pulseAlpha * (0.3 + entropy * 0.5);
-                ctx.fillRect(screenX, screenY, p.size, p.size);
-            });
-            ctx.globalAlpha = 1;
-        };
-
-        return { update, draw };
-    })();
-
-    // ===== PLAYER =====
-    const createPlayer = () => ({
-        x: width / 2,
-        y: height / 2,
-        vx: 0,
-        vy: 0,
-        trail: [],
-        pulse: 0,
-        invulnerable: 0
-    });
-
-    const updatePlayer = player => {
-        const dir = Input.getDirection();
-        
-        // Acceleration with diagonal normalization
-        if (dir.x !== 0 || dir.y !== 0) {
-            const n = normalize(dir.x, dir.y);
-            player.vx += n.x * CONFIG.player.acceleration;
-            player.vy += n.y * CONFIG.player.acceleration;
-        }
-        
-        // Friction
-        player.vx *= CONFIG.player.friction;
-        player.vy *= CONFIG.player.friction;
-        
-        // Update position
-        player.x += player.vx;
-        player.y += player.vy;
-        
-        // Clamp to bounds
-        player.x = clamp(CONFIG.player.size, width - CONFIG.player.size)(player.x);
-        player.y = clamp(CONFIG.player.size, height - CONFIG.player.size)(player.y);
-        
-        // Enhanced trail
-        const speed = Math.sqrt(player.vx ** 2 + player.vy ** 2);
-        if (speed > 0.3) {
-            player.trail.push({ 
-                x: player.x, 
-                y: player.y, 
-                age: 0,
-                size: 3 + speed * 0.5
-            });
-        }
-        player.trail = player.trail.filter(t => {
-            t.age++;
-            return t.age < 25;
-        });
-        
-        // Pulse animation
-        player.pulse += 0.12;
-        
-        // Invulnerability countdown
-        if (player.invulnerable > 0) player.invulnerable--;
-        
-        return player;
-    };
-
-    const drawPlayer = player => {
-        const pulseSize = 1 + Math.sin(player.pulse) * 0.12;
-        const invulnerableAlpha = player.invulnerable > 0 ? 0.5 + Math.sin(player.pulse * 2) * 0.3 : 1;
-        
-        // Trail with gradient
-        player.trail.forEach((t, i) => {
-            const progress = i / player.trail.length;
-            const alpha = progress * 0.5 * invulnerableAlpha;
-            const size = t.size * progress;
-            ctx.fillStyle = CONFIG.colors.player;
-            ctx.globalAlpha = alpha;
-            ctx.fillRect(t.x - size/2, t.y - size/2, size, size);
-        });
-        ctx.globalAlpha = 1;
-        
-        ctx.save();
-        ctx.globalAlpha = invulnerableAlpha;
-        
-        // Outer glow rings
-        ctx.shadowBlur = 30 * pulseSize;
-        ctx.shadowColor = CONFIG.colors.playerGlow;
-        
-        // Outer ring
-        ctx.strokeStyle = CONFIG.colors.player;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(player.x, player.y, CONFIG.player.size * pulseSize, 0, Math.PI * 2);
-        ctx.stroke();
-        
-        // Inner glow
-        ctx.fillStyle = CONFIG.colors.player;
-        const s = CONFIG.player.size * 0.6 * pulseSize;
-        ctx.fillRect(player.x - s/2, player.y - s/2, s, s);
-        
-        // Core
-        ctx.fillStyle = '#fff';
-        ctx.shadowBlur = 15;
-        ctx.fillRect(player.x - 3, player.y - 3, 6, 6);
-        
-        ctx.restore();
-        ctx.shadowBlur = 0;
-    };
-
-    // ===== COLLECTIBLES =====
-    const symbols = ['∞', 'π', '∑', '∫', 'φ', '√', '∆'];
-    
-    const createCollectible = (index, player) => {
-        let x, y, d;
-        let attempts = 0;
-        do {
-            x = random(70, width - 70);
-            y = random(70, height - 70);
-            d = dist(x, y, player.x, player.y);
-            attempts++;
-        } while (d < 200 && attempts < 60);
-        
-        return {
-            x, y,
-            symbol: symbols[index % symbols.length],
-            size: 24,
-            collected: false,
-            pulse: 0,
-            rotation: random(0, Math.PI * 2),
-            spawnScale: 0
-        };
-    };
-
-    const updateCollectible = (c, time) => {
-        c.pulse = Math.sin(time * 0.0025) * 0.2 + 0.8;
-        c.rotation += 0.008;
-        if (c.spawnScale < 1) c.spawnScale += 0.05;
-        return c;
-    };
-
-    const drawCollectible = c => {
-        if (c.collected) return;
-        
-        const scale = c.spawnScale;
-        const glowSize = 40 * c.pulse * scale;
-        ctx.shadowBlur = glowSize;
-        ctx.shadowColor = CONFIG.colors.collectibleGlow;
-        
-        // Outer ring
-        ctx.strokeStyle = CONFIG.colors.collectible;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(c.x, c.y, c.size * c.pulse * scale, 0, Math.PI * 2);
-        ctx.stroke();
-        
-        // Inner ring (rotating, dashed)
-        ctx.save();
-        ctx.translate(c.x, c.y);
-        ctx.rotate(-c.rotation);
-        ctx.strokeStyle = 'rgba(255, 215, 0, 0.6)';
-        ctx.setLineDash([8, 6]);
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.arc(0, 0, c.size * 0.65 * scale, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.restore();
-        
-        // Inner glow circle
-        ctx.fillStyle = 'rgba(255, 215, 0, 0.15)';
-        ctx.beginPath();
-        ctx.arc(c.x, c.y, c.size * 0.5 * scale, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Symbol
-        ctx.fillStyle = CONFIG.colors.collectible;
-        ctx.font = `bold ${20 * c.pulse * scale}px "JetBrains Mono"`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(c.symbol, c.x, c.y);
-        
-        ctx.shadowBlur = 0;
-    };
-
-    // ===== ENEMIES =====
-    const createEnemy = (player, index) => {
-        let x, y, d;
-        let attempts = 0;
-        do {
-            // Spawn from edges
-            if (Math.random() < 0.5) {
-                x = Math.random() < 0.5 ? -30 : width + 30;
-                y = random(0, height);
-            } else {
-                x = random(0, width);
-                y = Math.random() < 0.5 ? -30 : height + 30;
-            }
-            d = dist(x, y, player.x, player.y);
-            attempts++;
-        } while (d < 300 && attempts < 30);
-        
-        return {
-            x, y,
-            vx: random(-0.5, 0.5),
-            vy: random(-0.5, 0.5),
-            size: CONFIG.enemies.size,
-            angle: random(0, Math.PI * 2),
-            spin: random(-0.04, 0.04),
-            id: index,
-            pulse: random(0, Math.PI * 2)
-        };
-    };
-
-    const updateEnemy = (enemy, player, entropy, time) => {
-        const speed = lerp(CONFIG.enemies.baseSpeed, CONFIG.enemies.maxSpeed, entropy);
-        const dx = player.x - enemy.x;
-        const dy = player.y - enemy.y;
-        const d = Math.sqrt(dx * dx + dy * dy);
-        
-        // Predictive chase - aim slightly ahead of player
-        const predictFactor = 0.15 * entropy;
-        const targetX = player.x + player.vx * 5 * predictFactor;
-        const targetY = player.y + player.vy * 5 * predictFactor;
-        const pdx = targetX - enemy.x;
-        const pdy = targetY - enemy.y;
-        const pd = Math.sqrt(pdx * pdx + pdy * pdy);
-        
-        if (pd > 0) {
-            const chaseStrength = 0.06 + entropy * 0.04;
-            enemy.vx += (pdx / pd) * chaseStrength;
-            enemy.vy += (pdy / pd) * chaseStrength;
-        }
-        
-        // Erratic movement at high entropy
-        if (entropy > 0.5) {
-            enemy.vx += random(-0.25, 0.25) * entropy;
-            enemy.vy += random(-0.25, 0.25) * entropy;
-        }
-        
-        // Limit speed
-        const v = Math.sqrt(enemy.vx ** 2 + enemy.vy ** 2);
-        if (v > speed) {
-            enemy.vx = (enemy.vx / v) * speed;
-            enemy.vy = (enemy.vy / v) * speed;
-        }
-        
-        enemy.x += enemy.vx;
-        enemy.y += enemy.vy;
-        enemy.angle += enemy.spin * (1 + entropy * 0.5);
-        enemy.pulse += 0.1;
-        
-        // Wrap around instead of bounce
-        const margin = 50;
-        if (enemy.x < -margin) enemy.x = width + margin;
-        if (enemy.x > width + margin) enemy.x = -margin;
-        if (enemy.y < -margin) enemy.y = height + margin;
-        if (enemy.y > height + margin) enemy.y = -margin;
-        
-        return enemy;
-    };
-
-    const drawEnemy = (enemy, entropy, time) => {
-        ctx.save();
-        ctx.translate(enemy.x, enemy.y);
-        ctx.rotate(enemy.angle);
-        
-        const intensity = 0.5 + entropy * 0.5;
-        const pulse = 1 + Math.sin(enemy.pulse) * 0.15;
-        const s = enemy.size * pulse;
-        
-        ctx.shadowBlur = 25 * intensity;
-        ctx.shadowColor = CONFIG.colors.enemyGlow;
-        
-        // X shape with glow
-        ctx.fillStyle = CONFIG.colors.enemy;
-        ctx.fillRect(-s/2, -2.5, s, 5);
-        ctx.fillRect(-2.5, -s/2, 5, s);
-        
-        // Rotating inner elements
-        ctx.rotate(time * 0.002);
-        ctx.fillStyle = 'rgba(255, 42, 109, 0.6)';
-        ctx.fillRect(-s/3, -2, s/1.5, 4);
-        ctx.fillRect(-2, -s/3, 4, s/1.5);
-        
-        // Center core
-        ctx.fillStyle = '#fff';
-        ctx.shadowBlur = 10;
-        ctx.beginPath();
-        ctx.arc(0, 0, 3, 0, Math.PI * 2);
-        ctx.fill();
-        
-        ctx.restore();
-        ctx.shadowBlur = 0;
-    };
-
-    // ===== GAME STATE =====
-    let gameState = 'start';
-    let player = createPlayer();
-    let collectibles = [];
-    let enemies = [];
-    let score = 0;
-    let entropy = 1.0;
-    let collectedSymbols = [];
-    let gameTime = 0;
-
-    // ===== UI UPDATES =====
-    const updateUI = () => {
-        document.getElementById('score').textContent = score;
-        
-        const entropyPercent = Math.round(entropy * 100);
-        document.getElementById('entropy-fill').style.width = `${entropyPercent}%`;
-        document.getElementById('entropy-value').textContent = entropyPercent;
-        
-        const entropyEl = document.getElementById('entropy-fill');
-        const entropyValue = document.getElementById('entropy-value');
-        
-        if (entropy < 0.3) {
-            entropyEl.classList.add('low');
-            entropyValue.classList.add('stable');
-        } else {
-            entropyEl.classList.remove('low');
-            entropyValue.classList.remove('stable');
-        }
-    };
-
-    // ===== GAME LOOP =====
-    const gameLoop = time => {
-        if (gameState !== 'playing') return;
-        
-        gameTime = time;
-        
-        // Apply screen shake
-        const shakeAmount = ScreenShake.update();
-        const shakeOffset = ScreenShake.getOffset();
-        
-        // Clear
-        ctx.fillStyle = '#050505';
-        ctx.fillRect(0, 0, width, height);
-        
-        ctx.save();
-        ctx.translate(shakeOffset.x, shakeOffset.y);
-        
-        // Calculate entropy
-        entropy = Math.max(0.05, 1.0 - (score / CONFIG.collectibles) * 0.95);
-        
-        // Background
-        BackgroundParticles.update(entropy, time);
-        BackgroundParticles.draw(entropy, time);
-        
-        // Update and draw collectibles
-        collectibles.forEach(c => {
-            updateCollectible(c, time);
-            drawCollectible(c);
-            
-            if (!c.collected && dist(player.x, player.y, c.x, c.y) < CONFIG.player.size + c.size - 3) {
-                c.collected = true;
-                score++;
-                collectedSymbols.push(c.symbol);
-                EffectParticles.spawn(c.x, c.y, 20, 'collect');
-                EffectParticles.spawnBurst(c.x, c.y, 8, 'collect');
-                updateUI();
+                osc.connect(gain);
+                gain.connect(masterGain);
                 
-                if (score >= CONFIG.collectibles) {
-                    gameState = 'win';
-                    document.getElementById('collected-symbols').textContent = collectedSymbols.join(' ');
-                    document.getElementById('win-screen').style.display = 'flex';
-                    document.getElementById('touch-controls').style.display = 'none';
-                }
-            }
-        });
-        
-        // Update and draw enemies
-        enemies.forEach(e => {
-            updateEnemy(e, player, entropy, time);
-            drawEnemy(e, entropy, time);
-            
-            const collisionDist = CONFIG.player.size/2 + e.size/2 + 2;
-            if (player.invulnerable === 0 && dist(player.x, player.y, e.x, e.y) < collisionDist) {
-                ScreenShake.trigger();
-                EffectParticles.spawnBurst(player.x, player.y, 30, 'enemy');
-                player.invulnerable = 30;
-                
-                // Brief delay before game over for impact
-                setTimeout(() => {
-                    if (gameState === 'playing') {
-                        gameState = 'gameover';
-                        document.getElementById('game-over-screen').style.display = 'flex';
-                        document.getElementById('touch-controls').style.display = 'none';
+                osc.start(time);
+                osc.stop(time + 0.15);
+            };
+
+            // Sequencer
+            const scheduler = () => {
+                if (!isPlaying || isMuted) return;
+                while (nextNoteTime < ctx.currentTime + SCHEDULE_AHEAD) {
+                    const beat = noteIndex % 8;
+                    // Bass on 0 and 4
+                    if (beat === 0 || beat === 4) {
+                        playBass(nextNoteTime, SCALE[Math.floor(noteIndex/16) % SCALE.length]);
                     }
-                }, 200);
+                    // Arp every beat, changing notes
+                    if (noteIndex % 2 === 0) {
+                        playArp(nextNoteTime, SCALE[(noteIndex % 4)]);
+                    }
+                    
+                    const secondsPerBeat = 60.0 / TEMPO;
+                    nextNoteTime += 0.25 * secondsPerBeat; // 16th notes
+                    noteIndex++;
+                }
+                setTimeout(scheduler, LOOKAHEAD);
+            };
+
+            // SFX
+            const sfx = {
+                collect: () => {
+                    if (isMuted) return;
+                    const t = ctx.currentTime;
+                    const osc = ctx.createOscillator();
+                    const g = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(880, t);
+                    osc.frequency.exponentialRampToValueAtTime(1760, t + 0.1);
+                    g.gain.setValueAtTime(0.3, t);
+                    g.gain.linearRampToValueAtTime(0, t + 0.2);
+                    osc.connect(g); g.connect(masterGain);
+                    osc.start(t); osc.stop(t + 0.2);
+                },
+                hit: () => {
+                    if (isMuted) return;
+                    const t = ctx.currentTime;
+                    const osc = ctx.createOscillator();
+                    const g = ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(100, t);
+                    osc.frequency.linearRampToValueAtTime(20, t + 0.3);
+                    g.gain.setValueAtTime(0.5, t);
+                    g.gain.linearRampToValueAtTime(0, t + 0.3);
+                    osc.connect(g); g.connect(masterGain);
+                    osc.start(t); osc.stop(t + 0.3);
+                },
+                win: () => {
+                    if (isMuted) return;
+                    const t = ctx.currentTime;
+                    [0, 0.2, 0.4].forEach((d, i) => {
+                        const osc = ctx.createOscillator();
+                        const g = ctx.createGain();
+                        osc.frequency.value = 440 + (i * 110);
+                        g.gain.setValueAtTime(0.3, t+d);
+                        g.gain.linearRampToValueAtTime(0, t+d+1);
+                        osc.connect(g); g.connect(masterGain);
+                        osc.start(t+d); osc.stop(t+d+1);
+                    });
+                }
+            };
+
+            return { toggle, sfx, getContext: () => ctx };
+        })();
+
+        // --- GAME CONSTANTS ---
+        const CONFIG = {
+            player: { size: 16, color: '#00F3FF', speed: 0.8, drag: 0.92 },
+            levels: [
+                { count: 3, speed: 2, entropyRate: 0.0003, text: "DIMENSION I: AWAKENING" },
+                { count: 5, speed: 3, entropyRate: 0.0005, text: "DIMENSION II: CHAOS" },
+                { count: 7, speed: 4.5, entropyRate: 0.0008, text: "DIMENSION III: VOID" }
+            ],
+            colors: {
+                trail: ['rgba(0, 243, 255, 0.5)', 'rgba(157, 0, 255, 0.5)', 'rgba(255, 215, 0, 0.5)']
             }
+        };
+
+        // --- GAME STATE ---
+        let state = {
+            screen: 'start', // start, playing, levelup, gameover, win
+            level: 0,
+            score: 0,
+            entropy: 1.0,
+            w: 0, h: 0,
+            shake: 0,
+            beatPulse: 0
+        };
+
+        let player = { x: 0, y: 0, vx: 0, vy: 0, trail: [], iframes: 0 };
+        let entities = [];
+        let particles = [];
+        let keys = {};
+
+        // --- SETUP ---
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        const resize = () => {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            state.w = canvas.width;
+            state.h = canvas.height;
+        };
+        window.onresize = resize;
+        resize();
+
+        // --- INPUT ---
+        window.onkeydown = e => keys[e.key] = true;
+        window.onkeyup = e => keys[e.key] = false;
+        
+        document.querySelectorAll('.d-btn').forEach(btn => {
+            const k = btn.dataset.key;
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[k] = true; });
+            btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[k] = false; });
+            btn.addEventListener('mousedown', () => keys[k] = true);
+            btn.addEventListener('mouseup', () => keys[k] = false);
         });
-        
-        // Effect particles
-        EffectParticles.update();
-        EffectParticles.draw();
-        
-        // Player
-        player = updatePlayer(player);
-        drawPlayer(player);
-        
-        ctx.restore();
-        
-        requestAnimationFrame(gameLoop);
-    };
 
-    // ===== GAME CONTROL =====
-    const startGame = () => {
-        player = createPlayer();
-        score = 0;
-        entropy = 1.0;
-        collectedSymbols = [];
-        gameTime = 0;
-        ScreenShake.trigger(0, 0); // Reset shake
-        
-        collectibles = Array.from({ length: CONFIG.collectibles }, (_, i) => 
-            createCollectible(i, player)
-        );
-        
-        enemies = Array.from({ length: CONFIG.enemies.count }, (_, i) => 
-            createEnemy(player, i)
-        );
-        
-        gameState = 'playing';
-        document.getElementById('start-screen').style.display = 'none';
-        document.getElementById('game-over-screen').style.display = 'none';
-        document.getElementById('win-screen').style.display = 'none';
-        
-        // Show touch controls on mobile
-        if (window.innerWidth <= 768) {
-            document.getElementById('touch-controls').style.display = 'block';
-        }
-        
-        updateUI();
-        requestAnimationFrame(gameLoop);
-    };
+        document.getElementById('mute-btn').onclick = (e) => {
+            const active = Audio.toggle();
+            e.target.innerText = active ? "AUDIO: ON" : "AUDIO: OFF";
+            e.target.style.borderColor = active ? "var(--math-cyan)" : "#555";
+        };
 
-    // ===== EVENTS =====
-    document.getElementById('start-btn').addEventListener('click', startGame);
-    document.getElementById('retry-btn').addEventListener('click', startGame);
-    document.getElementById('play-again-btn').addEventListener('click', startGame);
+        // --- ENTITIES ---
+        const spawnPlayer = () => {
+            player = { 
+                x: state.w/2, y: state.h/2, 
+                vx: 0, vy: 0, 
+                trail: [], iframes: 0 
+            };
+        };
+
+        const createParticle = (x, y, color, speed) => ({
+            x, y, 
+            vx: R(-speed, speed), vy: R(-speed, speed),
+            life: 1.0, decay: R(0.02, 0.05),
+            color
+        });
+
+        const spawnLevel = (lvlIdx) => {
+            const cfg = CONFIG.levels[lvlIdx];
+            entities = [];
+            
+            // Spawn Collectibles
+            for(let i=0; i<7; i++) {
+                entities.push({
+                    type: 'orb',
+                    x: R(50, state.w-50), y: R(50, state.h-50),
+                    val: ['∞', '∑', 'Ω', '∫', '∆', 'π', 'Ψ'][i],
+                    t: R(0, 100)
+                });
+            }
+
+            // Spawn Enemies
+            for(let i=0; i<cfg.count; i++) {
+                let ex, ey;
+                if(R(0,1)>0.5) { ex = R(0, state.w); ey = -20; }
+                else { ex = -20; ey = R(0, state.h); }
+                
+                // Mix enemy types based on level
+                let eType = 0; // Chaser
+                if (lvlIdx > 0 && i % 3 === 0) eType = 1; // Dasher
+                if (lvlIdx > 1 && i % 4 === 0) eType = 2; // Wanderer
+
+                entities.push({
+                    type: 'enemy', eType,
+                    x: ex, y: ey,
+                    vx: 0, vy: 0,
+                    speed: cfg.speed * (eType === 1 ? 1.5 : 1),
+                    timer: 0
+                });
+            }
+        };
+
+        // --- PHYSICS & LOGIC ---
+        const updatePhysics = () => {
+            // Player Movement
+            const acc = 0.5;
+            if (keys['ArrowUp'] || keys['w']) player.vy -= acc;
+            if (keys['ArrowDown'] || keys['s']) player.vy += acc;
+            if (keys['ArrowLeft'] || keys['a']) player.vx -= acc;
+            if (keys['ArrowRight'] || keys['d']) player.vx += acc;
+
+            player.vx *= CONFIG.player.drag;
+            player.vy *= CONFIG.player.drag;
+            player.x += player.vx;
+            player.y += player.vy;
+
+            // Boundaries
+            if(player.x < 0) { player.x = 0; player.vx *= -0.5; }
+            if(player.x > state.w) { player.x = state.w; player.vx *= -0.5; }
+            if(player.y < 0) { player.y = 0; player.vy *= -0.5; }
+            if(player.y > state.h) { player.y = state.h; player.vy *= -0.5; }
+
+            // Trail
+            if(Math.hypot(player.vx, player.vy) > 1) {
+                player.trail.push({x: player.x, y: player.y, l: 1});
+            }
+            player.trail.forEach(t => t.l -= 0.05);
+            player.trail = player.trail.filter(t => t.l > 0);
+
+            if(player.iframes > 0) player.iframes--;
+
+            // Entities
+            const lvlCfg = CONFIG.levels[state.level];
+            
+            entities.forEach(e => {
+                if(e.type === 'orb') {
+                    e.t += 0.05;
+                    e.y += Math.sin(e.t) * 0.2;
+                    
+                    if(DIST(player, e) < 30) {
+                        e.dead = true;
+                        state.score++;
+                        state.entropy = Math.min(1, state.entropy + 0.2);
+                        Audio.sfx.collect();
+                        // Particles
+                        for(let i=0; i<10; i++) particles.push(createParticle(e.x, e.y, CONFIG.colors.trail[state.level], 5));
+                    }
+                } 
+                else if(e.type === 'enemy') {
+                    const dx = player.x - e.x;
+                    const dy = player.y - e.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    const nx = dx/dist;
+                    const ny = dy/dist;
+
+                    if (e.eType === 0) { // Standard Chaser
+                        e.vx += nx * 0.2;
+                        e.vy += ny * 0.2;
+                    } 
+                    else if (e.eType === 1) { // Dasher
+                        e.timer++;
+                        if (e.timer < 60) {
+                            // Aim
+                            e.vx *= 0.9; e.vy *= 0.9;
+                        } else if (e.timer === 60) {
+                            // Dash
+                            e.vx = nx * e.speed * 8;
+                            e.vy = ny * e.speed * 8;
+                        } else if (e.timer > 80) {
+                            e.timer = 0;
+                        }
+                    }
+                    else if (e.eType === 2) { // Drifter
+                        e.vx += R(-0.5, 0.5);
+                        e.vy += R(-0.5, 0.5);
+                        e.vx += nx * 0.05;
+                        e.vy += ny * 0.05;
+                    }
+
+                    // Cap speed (except dashers mid-dash)
+                    const v = Math.hypot(e.vx, e.vy);
+                    if(e.eType !== 1 || e.timer < 60) {
+                        if(v > e.speed) { e.vx = (e.vx/v)*e.speed; e.vy = (e.vy/v)*e.speed; }
+                    }
+
+                    e.x += e.vx; e.y += e.vy;
+
+                    // Wrap
+                    if(e.x < -20) e.x = state.w + 20;
+                    if(e.x > state.w + 20) e.x = -20;
+                    if(e.y < -20) e.y = state.h + 20;
+                    if(e.y > state.h + 20) e.y = -20;
+
+                    // Collision
+                    if(player.iframes <= 0 && DIST(player, e) < 20) {
+                        state.shake = 20;
+                        player.iframes = 60;
+                        state.entropy -= 0.3;
+                        Audio.sfx.hit();
+                        for(let i=0; i<15; i++) particles.push(createParticle(player.x, player.y, '#FF2A6D', 8));
+                    }
+                }
+            });
+
+            entities = entities.filter(e => !e.dead);
+            particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.life -= p.decay; });
+            particles = particles.filter(p => p.life > 0);
+
+            // Entropy
+            state.entropy -= lvlCfg.entropyRate;
+            if(player.iframes > 0) state.entropy -= 0.001; // Leak on hit
+            
+            // UI Update
+            document.getElementById('score').innerText = state.score;
+            document.getElementById('max-score').innerText = (state.level + 1) * 7;
+            const bar = document.getElementById('entropy-fill');
+            bar.style.width = (state.entropy * 100) + '%';
+            if(state.entropy < 0.25) bar.classList.add('crit'); else bar.classList.remove('crit');
+
+            // Win/Loss
+            if(state.entropy <= 0) gameOver();
+            if(state.score >= (state.level + 1) * 7) levelUp();
+        };
+
+        const levelUp = () => {
+            if(state.level >= 2) {
+                gameWin();
+                return;
+            }
+            
+            state.level++;
+            state.screen = 'levelup';
+            
+            const scr = document.getElementById('level-screen');
+            document.getElementById('level-title').innerText = CONFIG.levels[state.level].text;
+            scr.style.display = 'flex';
+            
+            Audio.sfx.win();
+
+            setTimeout(() => {
+                scr.style.display = 'none';
+                state.screen = 'playing';
+                state.entropy = 1.0;
+                spawnLevel(state.level);
+                document.getElementById('level-val').innerText = state.level + 1;
+            }, 2500);
+        };
+
+        const gameWin = () => {
+            state.screen = 'win';
+            document.getElementById('win-screen').style.display = 'flex';
+            Audio.sfx.win();
+        };
+
+        const gameOver = () => {
+            state.screen = 'gameover';
+            document.getElementById('game-over-screen').style.display = 'flex';
+        };
+
+        // --- RENDER ---
+        const draw = () => {
+            // Screen Shake & Glitch
+            let ox = 0, oy = 0;
+            if(state.shake > 0) {
+                ox = R(-state.shake, state.shake);
+                oy = R(-state.shake, state.shake);
+                state.shake *= 0.9;
+                if(state.shake < 0.5) state.shake = 0;
+            }
+
+            // Background Fade
+            ctx.fillStyle = `rgba(5, 5, 5, 0.4)`; // Trails effect
+            ctx.fillRect(0, 0, state.w, state.h);
+
+            ctx.save();
+            ctx.translate(ox, oy);
+
+            // Grid Pulse (Audio reactive)
+            if(Audio.getContext() && !Audio.isMuted) {
+                // Fake reactivity based on time since we generate audio
+                const t = Date.now() / 1000;
+                if(Math.floor(t * 2) % 2 === 0) state.beatPulse = 1; 
+            }
+            state.beatPulse *= 0.95;
+            
+            ctx.strokeStyle = 'rgba(0, 243, 255, 0.05)';
+            ctx.lineWidth = 1 + state.beatPulse;
+            ctx.beginPath();
+            const grid = 50;
+            for(let x=0; x<state.w; x+=grid) { ctx.moveTo(x,0); ctx.lineTo(x,state.h); }
+            for(let y=0; y<state.h; y+=grid) { ctx.moveTo(0,y); ctx.lineTo(state.w,y); }
+            ctx.stroke();
+
+            // Particles
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.fillRect(p.x, p.y, 4, 4);
+            });
+            ctx.globalAlpha = 1;
+
+            // Player Trail
+            ctx.fillStyle = CONFIG.colors.trail[state.level];
+            player.trail.forEach(t => {
+                ctx.globalAlpha = t.l * 0.4;
+                ctx.fillRect(t.x - 6, t.y - 6, 12, 12);
+            });
+            ctx.globalAlpha = 1;
+
+            // Player
+            if(player.iframes % 4 < 2) {
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = CONFIG.player.color;
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(player.x, player.y, 8, 0, Math.PI*2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+
+            // Entities
+            entities.forEach(e => {
+                if(e.type === 'orb') {
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = '#FFD700';
+                    ctx.strokeStyle = '#FFD700';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(e.x, e.y, 12 + Math.sin(e.t)*2, 0, Math.PI*2);
+                    ctx.stroke();
+                    ctx.fillStyle = '#FFD700';
+                    ctx.font = '14px JetBrains Mono';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(e.val, e.x, e.y);
+                } else if (e.type === 'enemy') {
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = '#FF2A6D';
+                    ctx.fillStyle = '#FF2A6D';
+                    
+                    ctx.save();
+                    ctx.translate(e.x, e.y);
+                    // Rotate based on type
+                    if(e.eType === 0) ctx.rotate(Date.now()/200);
+                    if(e.eType === 1) ctx.rotate(Math.atan2(e.vy, e.vx));
+                    
+                    const s = 14;
+                    if(e.eType === 1) { // Triangle for dasher
+                        ctx.beginPath();
+                        ctx.moveTo(s, 0); ctx.lineTo(-s, s/2); ctx.lineTo(-s, -s/2);
+                        ctx.fill();
+                    } else { // Square/Diamond
+                        ctx.fillRect(-s/2, -s/2, s, s);
+                    }
+                    ctx.restore();
+                }
+            });
+
+            // RGB Shift Post-Process (Simulated)
+            if(state.shake > 2) {
+                const shift = state.shake;
+                ctx.globalCompositeOperation = 'screen';
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+                ctx.fillRect(0, R(0, state.h), state.w, 2);
+                ctx.fillStyle = 'rgba(0, 255, 255, 0.5)';
+                ctx.fillRect(0, R(0, state.h), state.w, 2);
+                ctx.globalCompositeOperation = 'source-over';
+            }
+
+            ctx.restore();
+        };
+
+        // --- LOOP ---
+        const loop = () => {
+            if(state.screen === 'playing' || state.screen === 'levelup') {
+                updatePhysics();
+                draw();
+            }
+            requestAnimationFrame(loop);
+        };
+
+        // --- EVENTS ---
+        document.getElementById('start-btn').onclick = () => {
+            document.getElementById('start-screen').style.display = 'none';
+            Audio.toggle(); // Start audio context on user gesture
+            resetGame();
+        };
+
+        document.getElementById('retry-btn').onclick = () => {
+            document.getElementById('game-over-screen').style.display = 'none';
+            resetGame();
+        };
+
+        document.getElementById('play-again-btn').onclick = () => {
+            document.getElementById('win-screen').style.display = 'none';
+            resetGame();
+        };
+
+        const resetGame = () => {
+            state.score = 0;
+            state.level = 0;
+            state.entropy = 1.0;
+            state.screen = 'playing';
+            spawnPlayer();
+            spawnLevel(0);
+            document.getElementById('level-val').innerText = "1";
+        };
+
+        // Start Loop
+        requestAnimationFrame(loop);
+
     </script>
 </body>
 </html>
