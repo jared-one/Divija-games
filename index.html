@@ -3,16 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Divija: The Calculus of the Heart</title>
+    <title>Divija | The Calculus of the Heart</title>
+    <!-- Prevent 404 Favicon Error -->
+    <link rel="icon" href="data:,">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&family=Cinzel:wght@700&display=swap');
 
         :root {
             --bg: #050505;
-            --term-green: #0aff0a;
             --heart-red: #ff4d4d;
             --soul-cyan: #00f3ff;
             --gold: #ffd700;
+            --grid: rgba(255,255,255,0.1);
         }
 
         body {
@@ -27,248 +29,253 @@
             height: 100vh;
         }
 
-        /* CRT EFFECT CONTAINER */
-        #crt-container {
+        /* --- CRT MONITOR EFFECT --- */
+        #crt-frame {
             position: relative;
             width: 100vw;
             height: 100vh;
-            max-width: 1200px; /* Aspect constraint */
+            max-width: 1024px;
             aspect-ratio: 4/3;
             background: #000;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            border: 2px solid #333;
             overflow: hidden;
-            box-shadow: 0 0 100px rgba(0,0,0,0.8);
         }
 
         canvas {
             display: block;
             width: 100%;
             height: 100%;
-            image-rendering: pixelated; /* Retro look */
+            image-rendering: pixelated;
         }
 
-        /* SCANLINES & VIGNETTE */
-        .overlay {
+        /* Scanlines */
+        .scanlines {
             position: absolute; inset: 0; pointer-events: none; z-index: 10;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
             background-size: 100% 2px, 3px 100%;
-            box-shadow: inset 0 0 150px rgba(0,0,0,0.9);
         }
 
-        /* UI LAYER (HTML on top of Canvas for crisp text) */
+        /* --- UI LAYER --- */
         #ui-layer {
             position: absolute; inset: 0; pointer-events: none; z-index: 5;
             display: flex; flex-direction: column; justify-content: space-between;
-            padding: 40px;
+            padding: 30px;
         }
 
         .hud-bar {
             display: flex; justify-content: space-between; align-items: flex-end;
             text-shadow: 2px 2px 0px #000;
+            font-size: 24px; color: white;
         }
 
-        .stat-box { color: white; font-size: 24px; letter-spacing: 2px; }
-        .stat-label { color: #888; font-size: 16px; display: block; }
-        .val-gold { color: var(--gold); }
-        .val-cyan { color: var(--soul-cyan); }
-        .val-red { color: var(--heart-red); }
+        .hp-bar {
+            width: 200px; height: 20px; background: #333; border: 2px solid white;
+            position: relative; margin-left: 10px; display: inline-block; vertical-align: middle;
+        }
+        .hp-fill {
+            height: 100%; background: var(--gold); width: 100%;
+            transition: width 0.2s;
+        }
+        .resilience-text { color: var(--soul-cyan); }
 
+        /* --- DIALOGUE BOX (Undertale Style) --- */
         #dialogue-box {
-            position: absolute; bottom: 10%; left: 50%; transform: translateX(-50%);
-            width: 80%; max-width: 600px;
+            position: absolute; bottom: 5%; left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 700px;
             background: #000;
             border: 4px solid white;
             padding: 20px;
-            font-size: 24px;
+            font-size: 28px;
             color: white;
             display: none;
             font-family: 'VT323', monospace;
             line-height: 1.2;
         }
-        #dialogue-face {
-            float: left; width: 64px; height: 64px; margin-right: 20px; background: #333;
-            image-rendering: pixelated;
+        .dialogue-face {
+            float: left; width: 80px; height: 80px; margin-right: 20px;
+            border: 2px solid white; background: #000;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 40px;
         }
 
-        /* SCREENS */
+        /* --- SCREENS --- */
         .screen {
             position: absolute; inset: 0; z-index: 20;
-            background: #000;
+            background: rgba(0,0,0,0.9);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             pointer-events: auto;
-            transition: opacity 1s;
+            transition: opacity 0.5s;
         }
         .hidden { opacity: 0; pointer-events: none; }
 
         h1 {
             font-family: 'Cinzel', serif;
-            font-size: 4rem; color: var(--gold); margin-bottom: 20px;
-            text-shadow: 0 0 20px var(--gold);
-            text-align: center;
+            font-size: 4rem; color: var(--gold); margin: 0 0 20px 0;
+            text-shadow: 0 0 10px var(--gold); text-align: center;
         }
         
         .btn {
             background: transparent; color: white; border: 2px solid white;
             padding: 15px 40px; font-family: 'VT323', monospace; font-size: 24px;
-            cursor: pointer; margin-top: 20px; text-transform: uppercase;
+            cursor: pointer; margin-top: 30px; text-transform: uppercase;
             transition: all 0.2s;
         }
-        .btn:hover { background: white; color: black; box-shadow: 0 0 20px white; }
+        .btn:hover { background: white; color: black; box-shadow: 0 0 20px white; transform: scale(1.05); }
 
-        /* Meta glitch effect */
-        .glitch-text { animation: glitch 1s linear infinite; }
-        @keyframes glitch {
-            2%, 64% { transform: translate(2px,0) skew(0deg); }
-            4%, 60% { transform: translate(-2px,0) skew(0deg); }
-            62% { transform: translate(0,0) skew(5deg); }
+        .controls-hint {
+            color: #888; margin-top: 20px; font-size: 18px; text-align: center;
+        }
+        .key { border: 1px solid #666; padding: 2px 6px; border-radius: 4px; color: #fff; }
+
+        /* FLICKER ANIMATION */
+        .flicker { animation: flicker 2s infinite; }
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+            52% { opacity: 0.2; }
+            54% { opacity: 0.8; }
         }
     </style>
 </head>
 <body>
 
-<div id="crt-container">
+<div id="crt-frame">
     <canvas id="gameCanvas"></canvas>
-    <div class="overlay"></div>
+    <div class="scanlines"></div>
 
     <div id="ui-layer">
         <div class="hud-bar">
-            <div class="stat-box">
-                <span class="stat-label">DIVIJA LV 1</span>
-                <span class="val-red" id="hp-display">HP 20/20</span>
+            <div>
+                <span>DIVIJA</span>
+                <span style="font-size: 16px; color: #888; margin-left: 10px;">LV 1</span>
+                <div class="hp-bar"><div class="hp-fill" id="hp-val"></div></div>
+                <span id="hp-text" style="font-size: 20px; margin-left: 10px;">20/20</span>
             </div>
-            <div class="stat-box" style="text-align: right;">
-                <span class="stat-label">RESILIENCE</span>
-                <span class="val-cyan" id="tp-display">0%</span>
-            </div>
+            <div class="resilience-text">TP: <span id="tp-val">0</span>%</div>
         </div>
-        <!-- Dialogue box injected here by JS -->
+
         <div id="dialogue-box">
-            <canvas id="dialogue-face" width="64" height="64"></canvas>
+            <div class="dialogue-face" id="face-icon">♥</div>
             <span id="dialogue-text"></span>
+            <div style="font-size: 16px; color: #666; margin-top: 10px; text-align: right;">[Z] to Continue</div>
         </div>
     </div>
 
-    <!-- START SCREEN -->
+    <!-- TITLE SCREEN -->
     <div id="title-screen" class="screen">
-        <div style="font-family: 'VT323'; color: #666; margin-bottom: 10px;">// ARCHIVE_1.2_LOADED</div>
-        <h1>The Calculus of<br>The Heart</h1>
-        <p style="color: #aaa; text-align: center; max-width: 500px; font-size: 18px; margin-bottom: 30px;">
-            A simulation of the past year.<br>
-            Use <strong>Arrow Keys</strong> to Move.<br>
-            <strong>Z</strong> to Interact / Fire.<br>
-            <strong>X</strong> to use Resilience (Bomb).<br>
-            <strong>Shift</strong> to Focus (Slow).
-        </p>
-        <button class="btn" id="btn-start">BEGIN SIMULATION</button>
+        <h1 class="flicker">THE CALCULUS<br>OF THE HEART</h1>
+        <div class="controls-hint">
+            <span class="key">ARROWS</span> Move &nbsp; 
+            <span class="key">SHIFT</span> Focus &nbsp; 
+            <span class="key">Z</span> Interact &nbsp; 
+            <span class="key">X</span> Bomb
+        </div>
+        <button class="btn" id="btn-start">INITIATE SEQUENCE</button>
     </div>
 
     <!-- GAME OVER SCREEN -->
     <div id="game-over" class="screen hidden">
-        <h1 style="color: var(--heart-red)">DETERMINATION<br>BROKEN</h1>
-        <p style="color: white; font-size: 20px;" id="death-msg">Don't give up, Divija.</p>
-        <button class="btn" id="btn-retry">RETRY</button>
+        <h1 style="color: var(--heart-red)">HEART BROKEN</h1>
+        <p style="color: white; font-size: 24px;">Determined souls do not stay shattered.</p>
+        <button class="btn" id="btn-retry">RESTORE</button>
     </div>
-    
+
     <!-- WIN SCREEN -->
     <div id="win-screen" class="screen hidden">
-        <h1 style="color: var(--soul-cyan)">HARMONY<br>RESTORED</h1>
-        <p style="color: white; font-size: 20px; max-width: 600px; text-align: center;">
-            You stabilized the chaos. The equation is balanced.<br>
-            <span style="color: var(--gold); font-size: 24px; display: block; margin-top: 20px;">
+        <h1 style="color: var(--soul-cyan)">EQUATION BALANCED</h1>
+        <div style="text-align: center; color: white; font-size: 22px; max-width: 600px;">
+            <p>You navigated the chaos. You proved the theorem.</p>
+            <p style="margin-top: 40px; color: var(--gold); font-size: 28px; line-height: 1.5;">
                 As much as you may hate to hear this:<br>
-                I will always be DADDY
-            </span>
-        </p>
+                I will always be <strong>DADDY</strong>
+            </p>
+        </div>
     </div>
 </div>
 
-<!-- Audio Assets -->
+<!-- AUDIO -->
 <audio id="bgm" loop preload="auto">
+    <!-- Ensure this file exists in the folder -->
     <source src="fallen-down.mp3" type="audio/mpeg">
 </audio>
 
 <script>
 /**
- * ENGINE: "HEART_CORE"
- * A pure Canvas 2D engine inspired by Undertale/Bullet Hell mechanics.
+ * ENGINE: "HEART_CORE_V2"
  * 
- * SYSTEMS:
- * 1. Renderer: Retro grid, particles, post-processing.
- * 2. Physics: AABB collision, math-based movement patterns.
- * 3. Scripting: A timeline-based event system for storytelling.
- * 4. Audio: Hybrid (HTML5 BGM + WebAudio SFX).
+ * Fixes:
+ * - Strict null checks in update loop
+ * - Asset generation on the fly (no external images needed)
+ * - Robust State Machine
  */
 
-const CONSTANTS = {
-    WIDTH: 640,
-    HEIGHT: 480,
-    PLAYER_SPEED: 4,
-    FOCUS_SPEED: 2,
-    ARENA_PADDING: 10,
-    COLORS: {
+const CONFIG = {
+    width: 640,
+    height: 480,
+    colors: {
         bg: '#050505',
-        grid: '#1a1a2e',
+        arena: '#ffffff',
         heart: '#ff4d4d',
-        bullet_white: '#ffffff',
-        bullet_blue: '#00ffff',
-        bullet_orange: '#ffaa00'
+        bullet: '#ffffff',
+        graze: '#00f3ff',
+        warn: '#ff0000'
     }
 };
 
-// --- INPUT SYSTEM ---
+// --- 1. INPUT HANDLING ---
 const Input = {
     keys: {},
     init() {
-        window.addEventListener('keydown', e => this.keys[e.key.toLowerCase()] = true);
+        window.addEventListener('keydown', e => {
+            // Prevent scrolling with arrows/space
+            if(["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(e.code) > -1) {
+                e.preventDefault();
+            }
+            this.keys[e.key.toLowerCase()] = true;
+        });
         window.addEventListener('keyup', e => this.keys[e.key.toLowerCase()] = false);
     },
-    isDown(key) {
-        if(key === 'up') return this.keys['arrowup'] || this.keys['w'];
-        if(key === 'down') return this.keys['arrowdown'] || this.keys['s'];
-        if(key === 'left') return this.keys['arrowleft'] || this.keys['a'];
-        if(key === 'right') return this.keys['arrowright'] || this.keys['d'];
-        if(key === 'z') return this.keys['z'] || this.keys['enter'];
-        if(key === 'x') return this.keys['x'];
-        if(key === 'shift') return this.keys['shift'];
+    isDown(k) {
+        if (k === 'up') return this.keys['arrowup'] || this.keys['w'];
+        if (k === 'down') return this.keys['arrowdown'] || this.keys['s'];
+        if (k === 'left') return this.keys['arrowleft'] || this.keys['a'];
+        if (k === 'right') return this.keys['arrowright'] || this.keys['d'];
+        if (k === 'z') return this.keys['z'] || this.keys['enter'];
+        if (k === 'x') return this.keys['x'];
+        if (k === 'shift') return this.keys['shift'];
         return false;
     }
 };
 
-// --- AUDIO SYSTEM (HYBRID) ---
-const AudioSys = {
+// --- 2. AUDIO SYNTH (SFX) ---
+const Sfx = {
     ctx: null,
-    bgm: document.getElementById('bgm'),
-    
     init() {
         window.AudioContext = window.AudioContext || window.webkitAudioContext;
         this.ctx = new AudioContext();
     },
-
-    playBGM() {
-        this.bgm.volume = 0.5;
-        this.bgm.play().catch(e => console.log("Audio autoplay block"));
-    },
-
-    // Procedural SFX (Retro Synth)
-    sfx(type) {
-        if(!this.ctx) return;
+    play(type) {
+        if (!this.ctx) return;
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
         osc.connect(gain);
         gain.connect(this.ctx.destination);
-
+        
         const now = this.ctx.currentTime;
-        if(type === 'shoot') {
+        
+        if (type === 'text') {
             osc.type = 'square';
-            osc.frequency.setValueAtTime(440, now);
-            osc.frequency.exponentialRampToValueAtTime(880, now + 0.1);
-            gain.gain.setValueAtTime(0.1, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            osc.frequency.setValueAtTime(200, now);
+            gain.gain.setValueAtTime(0.05, now);
+            gain.gain.linearRampToValueAtTime(0, now + 0.05);
             osc.start(now);
-            osc.stop(now + 0.1);
+            osc.stop(now + 0.05);
         } else if (type === 'hit') {
             osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(100, now);
-            osc.frequency.linearRampToValueAtTime(50, now + 0.2);
+            osc.frequency.setValueAtTime(150, now);
+            osc.frequency.exponentialRampToValueAtTime(0.01, now + 0.2);
             gain.gain.setValueAtTime(0.2, now);
             gain.gain.linearRampToValueAtTime(0, now + 0.2);
             osc.start(now);
@@ -277,27 +284,31 @@ const AudioSys = {
             osc.type = 'sine';
             osc.frequency.setValueAtTime(800, now);
             gain.gain.setValueAtTime(0.05, now);
-            gain.gain.linearRampToValueAtTime(0, now + 0.05);
+            gain.gain.linearRampToValueAtTime(0, now + 0.1);
             osc.start(now);
-            osc.stop(now + 0.05);
-        } else if (type === 'text') {
+            osc.stop(now + 0.1);
+        } else if (type === 'bomb') {
             osc.type = 'square';
-            osc.frequency.setValueAtTime(220 + Math.random()*50, now);
-            gain.gain.setValueAtTime(0.05, now);
-            gain.gain.linearRampToValueAtTime(0, now + 0.03);
+            osc.frequency.setValueAtTime(100, now);
+            osc.frequency.linearRampToValueAtTime(800, now + 0.5);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.linearRampToValueAtTime(0, now + 0.5);
             osc.start(now);
-            osc.stop(now + 0.03);
+            osc.stop(now + 0.5);
         }
     }
 };
 
-// --- ASSET GENERATOR (Procedural Sprites) ---
-const Assets = {
-    sprites: {},
+// --- 3. GRAPHICS GENERATOR (Procedural Assets) ---
+const Sprites = {
+    heart: null,
+    bullet: null,
+    enemy: null,
+    
     generate() {
-        // 1. Player Heart
-        this.sprites.heart = this.createCanvas(32, 32, (ctx) => {
-            ctx.fillStyle = CONSTANTS.COLORS.heart;
+        // Player Heart
+        this.heart = this.createCanvas(32, 32, ctx => {
+            ctx.fillStyle = CONFIG.colors.heart;
             ctx.beginPath();
             ctx.moveTo(16, 28);
             ctx.bezierCurveTo(16, 26, 30, 18, 30, 10);
@@ -305,78 +316,95 @@ const Assets = {
             ctx.bezierCurveTo(14, 0, 2, 0, 2, 10);
             ctx.bezierCurveTo(2, 18, 16, 26, 16, 28);
             ctx.fill();
-            // Math Halo
-            ctx.strokeStyle = '#fff';
-            ctx.globalAlpha = 0.5;
-            ctx.beginPath(); ctx.arc(16, 16, 12, 0, Math.PI*2); ctx.stroke();
         });
 
-        // 2. Enemy (Entropy)
-        this.sprites.enemy = this.createCanvas(48, 48, (ctx) => {
+        // Bullet
+        this.bullet = this.createCanvas(16, 16, ctx => {
+            ctx.fillStyle = '#fff';
+            ctx.beginPath(); ctx.arc(8, 8, 5, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = '#888'; ctx.lineWidth=1; ctx.stroke();
+        });
+        
+        // Enemy (Entropy)
+        this.enemy = this.createCanvas(64, 64, ctx => {
             ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 3;
+            // Draw a geometric mess (Entropy)
             ctx.beginPath();
-            for(let i=0; i<6; i++) {
-                const a = (Math.PI*2/6) * i;
-                ctx.lineTo(24 + Math.cos(a)*20, 24 + Math.sin(a)*20);
+            for(let i=0; i<8; i++) {
+                ctx.moveTo(32,32);
+                ctx.lineTo(32 + Math.cos(i)*25, 32 + Math.sin(i)*25);
             }
-            ctx.closePath();
             ctx.stroke();
-            ctx.font = '20px monospace';
-            ctx.fillStyle = '#fff';
-            ctx.textAlign = 'center';
-            ctx.fillText('?', 24, 30);
-        });
-
-        // 3. Bullet (Circle)
-        this.sprites.bullet = this.createCanvas(16, 16, (ctx) => {
-            ctx.fillStyle = '#fff';
-            ctx.beginPath(); ctx.arc(8, 8, 6, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#000';
+            ctx.beginPath(); ctx.arc(32,32,10,0,Math.PI*2); ctx.fill(); ctx.stroke();
         });
     },
-    createCanvas(w, h, drawFn) {
+    
+    createCanvas(w, h, fn) {
         const c = document.createElement('canvas');
         c.width = w; c.height = h;
-        drawFn(c.getContext('2d'));
+        fn(c.getContext('2d'));
         return c;
     }
 };
 
-// --- GAME ENTITIES ---
+// --- 4. GAME ENTITIES ---
 class Player {
-    constructor(x, y) {
-        this.x = x;
-        this.y = y;
-        this.w = 16; 
-        this.h = 16;
+    constructor() {
+        this.x = CONFIG.width / 2;
+        this.y = CONFIG.height / 2;
         this.hp = 20;
         this.maxHp = 20;
-        this.resilience = 0; // TP
+        this.tp = 0; // Resilience (0-100)
+        this.speed = 4;
+        this.focusSpeed = 2;
         this.iframes = 0;
-        this.sprite = Assets.sprites.heart;
+        this.radius = 4; // Hitbox radius (very small, Touhou style)
     }
 
     update(arena) {
-        const speed = Input.isDown('shift') ? CONSTANTS.FOCUS_SPEED : CONSTANTS.PLAYER_SPEED;
+        // Movement
+        const spd = Input.isDown('shift') ? this.focusSpeed : this.speed;
         let dx = 0, dy = 0;
-        if(Input.isDown('left')) dx = -speed;
-        if(Input.isDown('right')) dx = speed;
-        if(Input.isDown('up')) dy = -speed;
-        if(Input.isDown('down')) dy = speed;
+        
+        if (Input.isDown('left')) dx = -spd;
+        if (Input.isDown('right')) dx = spd;
+        if (Input.isDown('up')) dy = -spd;
+        if (Input.isDown('down')) dy = spd;
 
-        this.x = Math.max(arena.x + 8, Math.min(arena.x + arena.w - 8, this.x + dx));
-        this.y = Math.max(arena.y + 8, Math.min(arena.y + arena.h - 8, this.y + dy));
+        this.x += dx;
+        this.y += dy;
 
-        if(this.iframes > 0) this.iframes--;
+        // Clamp to Arena
+        const margin = 8;
+        this.x = Math.max(arena.x + margin, Math.min(arena.x + arena.w - margin, this.x));
+        this.y = Math.max(arena.y + margin, Math.min(arena.y + arena.h - margin, this.y));
+
+        // Iframes
+        if (this.iframes > 0) this.iframes--;
+        
+        // Bomb
+        if (Input.isDown('x') && this.tp >= 100) {
+            this.tp = 0;
+            Game.clearBullets();
+            Sfx.play('bomb');
+            // Shake effect
+            Game.arena.shake = 20;
+        }
     }
 
     draw(ctx) {
-        if(this.iframes > 0 && Math.floor(Date.now() / 50) % 2 === 0) return;
-        ctx.drawImage(this.sprite, this.x - 16, this.y - 16);
-        // Hitbox dot (visible when focused)
-        if(Input.isDown('shift')) {
-            ctx.fillStyle = '#fff';
-            ctx.beginPath(); ctx.arc(this.x, this.y, 3, 0, Math.PI*2); ctx.fill();
+        // Blink if hit
+        if (this.iframes > 0 && Math.floor(Date.now() / 60) % 2 === 0) return;
+        
+        // Draw Heart
+        ctx.drawImage(Sprites.heart, this.x - 16, this.y - 16);
+        
+        // Draw Hitbox (Only when focused)
+        if (Input.isDown('shift')) {
+            ctx.fillStyle = 'red';
+            ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2); ctx.fill();
         }
     }
 }
@@ -386,378 +414,369 @@ class Bullet {
         this.x = x; this.y = y;
         this.vx = Math.cos(angle) * speed;
         this.vy = Math.sin(angle) * speed;
-        this.r = 6;
-        this.active = true;
+        this.type = type; // 'linear', 'sine', 'accel'
+        this.timer = 0;
         this.grazed = false;
-        this.type = type; // 0 = normal, 1 = wave
+        this.active = true;
     }
+
     update() {
-        this.x += this.vx;
-        this.y += this.vy;
-        if(this.type === 1) {
-            this.x += Math.sin(Date.now() * 0.01) * 2;
+        this.timer++;
+        
+        if (this.type === 'sine') {
+            this.x += this.vx + Math.cos(this.timer * 0.1) * 2;
+            this.y += this.vy;
+        } else {
+            this.x += this.vx;
+            this.y += this.vy;
         }
-        // Bounds check (loose)
-        if(this.x < -50 || this.x > CONSTANTS.WIDTH + 50 || this.y < -50 || this.y > CONSTANTS.HEIGHT + 50) {
+
+        // Cleanup OOB
+        if (this.x < -20 || this.x > CONFIG.width + 20 || this.y < -20 || this.y > CONFIG.height + 20) {
             this.active = false;
         }
     }
+
     draw(ctx) {
-        ctx.drawImage(Assets.sprites.bullet, this.x - 8, this.y - 8);
+        ctx.drawImage(Sprites.bullet, this.x - 8, this.y - 8);
     }
 }
 
-class Particle {
-    constructor(x, y, color) {
-        this.x = x; this.y = y;
-        this.vx = (Math.random() - 0.5) * 4;
-        this.vy = (Math.random() - 0.5) * 4;
-        this.life = 1.0;
-        this.color = color;
-    }
-    update() {
-        this.x += this.vx; this.y += this.vy;
-        this.life -= 0.05;
-    }
-    draw(ctx) {
-        ctx.globalAlpha = this.life;
-        ctx.fillStyle = this.color;
-        ctx.fillRect(this.x, this.y, 3, 3);
-        ctx.globalAlpha = 1;
-    }
-}
-
-// --- GAME STATE & LOGIC ---
+// --- 5. GAME ENGINE CORE ---
 const Game = {
     canvas: document.getElementById('gameCanvas'),
     ctx: null,
-    
-    // State
-    frame: 0,
     state: 'MENU', // MENU, PLAY, DIALOGUE, OVER, WIN
     
-    // Objects
     player: null,
     bullets: [],
-    particles: [],
     
     // Arena (The Box)
-    arena: { x: 220, y: 140, w: 200, h: 200, targetW: 200, targetH: 200 },
+    arena: { x: 320, y: 240, w: 10, h: 10, targetW: 250, targetH: 250, shake: 0 },
     
-    // Narrative Script
+    // Scripting
     script: [],
-    scriptIndex: 0,
-    waitTimer: 0,
-
+    step: 0,
+    timer: 0,
+    
     init() {
         this.ctx = this.canvas.getContext('2d');
-        this.canvas.width = CONSTANTS.WIDTH;
-        this.canvas.height = CONSTANTS.HEIGHT;
-        this.ctx.imageSmoothingEnabled = false; // Pixel art look
-
+        this.canvas.width = CONFIG.width;
+        this.canvas.height = CONFIG.height;
+        this.ctx.imageSmoothingEnabled = false;
+        
         Input.init();
-        Assets.generate();
+        Sfx.init();
+        Sprites.generate();
         
-        // Narrative Script Definition
+        // Definition of the "Calculus of the Heart" Timeline
         this.script = [
-            { type: 'text', text: "Initializing Divija.exe...", face: 'neutral' },
-            { type: 'text', text: "Warning: Emotional Entropy at 98%.", face: 'neutral' },
-            { type: 'battle', duration: 300, pattern: 'simple' },
-            { type: 'text', text: "Divija: \"Why is it so loud in here?\"", face: 'divija' },
-            { type: 'text', text: "System: \"The world is noisy. You must find your frequency.\"", face: 'system' },
-            { type: 'battle', duration: 500, pattern: 'spiral' },
-            { type: 'text', text: "System: \"You are a Tough Cookie. Use your Resilience.\"", face: 'system' },
-            { type: 'text', text: "[GRAZE bullets to build RESILIENCE. Press X to clear.]", face: 'system' },
-            { type: 'battle', duration: 600, pattern: 'math' },
-            { type: 'text', text: "Divija: \"I see the pattern now. It's just an equation.\"", face: 'divija' },
-            { type: 'text', text: "System: \"Correct. Solving for Harmony...\"", face: 'system' },
-            { type: 'battle', duration: 800, pattern: 'boss' },
-            { type: 'end' }
+            { cmd: 'text', msg: "Initializing Simulation...", face: 'sys' },
+            { cmd: 'text', msg: "Subject: Divija.", face: 'sys' },
+            { cmd: 'text', msg: "Variable: Toughness.", face: 'sys' },
+            { cmd: 'text', msg: "Warning: High Entropy detected.", face: 'sys' },
+            { cmd: 'battle', pattern: 'rain', time: 300 },
+            { cmd: 'text', msg: "Divija: \"Why is this so chaotic?\"", face: 'heart' },
+            { cmd: 'text', msg: "System: \"Life is noise. You are the signal.\"", face: 'sys' },
+            { cmd: 'battle', pattern: 'sine', time: 400 },
+            { cmd: 'text', msg: "System: \"Your independence is a shield.\"", face: 'sys' },
+            { cmd: 'text', msg: "System: \"But shields can be heavy.\"", face: 'sys' },
+            { cmd: 'battle', pattern: 'circle', time: 500 },
+            { cmd: 'text', msg: "Divija: \"I can calculate the trajectory.\"", face: 'heart' },
+            { cmd: 'text', msg: "Divija: \"It's just math.\"", face: 'heart' },
+            { cmd: 'text', msg: "System: \"Correct. Solving for Love...\"", face: 'sys' },
+            { cmd: 'battle', pattern: 'spiral', time: 600 },
+            { cmd: 'end' }
         ];
-
-        this.loop = this.loop.bind(this);
-        requestAnimationFrame(this.loop);
-    },
-
-    start() {
-        this.player = new Player(320, 240);
-        this.bullets = [];
-        this.particles = [];
-        this.scriptIndex = 0;
-        this.frame = 0;
-        this.state = 'PLAY';
-        this.nextScriptEvent();
-        AudioSys.playBGM();
         
-        // Reset Arena
-        this.arena = { x: 220, y: 140, w: 200, h: 200, targetW: 200, targetH: 200 };
+        requestAnimationFrame(() => this.loop());
     },
 
-    nextScriptEvent() {
-        if (this.scriptIndex >= this.script.length) {
+    reset() {
+        this.player = new Player();
+        this.bullets = [];
+        this.step = 0;
+        this.timer = 0;
+        this.arena = { x: 320, y: 240, w: 10, h: 10, targetW: 250, targetH: 250, shake: 0 };
+        this.nextEvent();
+        
+        // Play music
+        const bgm = document.getElementById('bgm');
+        bgm.volume = 0.4;
+        bgm.play().catch(e => console.log("Click to play audio"));
+    },
+
+    nextEvent() {
+        if (this.step >= this.script.length) {
             this.state = 'WIN';
+            document.getElementById('ui-layer').style.opacity = '0';
             document.getElementById('win-screen').classList.remove('hidden');
             return;
         }
 
-        const event = this.script[this.scriptIndex++];
-        
-        if (event.type === 'text') {
+        const ev = this.script[this.step];
+        this.step++;
+
+        if (ev.cmd === 'text') {
             this.state = 'DIALOGUE';
-            this.showDialogue(event.text, event.face);
-        } else if (event.type === 'battle') {
+            this.showDialogue(ev.msg, ev.face);
+        } else if (ev.cmd === 'battle') {
             this.state = 'PLAY';
-            this.waitTimer = event.duration;
-            this.currentPattern = event.pattern;
+            this.battleTimer = ev.time;
+            this.pattern = ev.pattern;
             this.hideDialogue();
-            // Resize Arena for Battle
-            this.arena.targetW = 300;
+            this.arena.targetW = 300; // Expand for battle
             this.arena.targetH = 300;
-        } else if (event.type === 'end') {
+        } else if (ev.cmd === 'end') {
             this.state = 'WIN';
+            document.getElementById('ui-layer').style.opacity = '0';
             document.getElementById('win-screen').classList.remove('hidden');
         }
     },
 
-    // --- LOGIC LOOP ---
-    update() {
-        // Arena interpolation
-        this.arena.x += ((CONSTANTS.WIDTH - this.arena.targetW) / 2 - this.arena.x) * 0.1;
-        this.arena.y += ((CONSTANTS.HEIGHT - this.arena.targetH) / 2 - this.arena.y) * 0.1;
+    // --- MAIN LOOP ---
+    loop() {
+        // Clear
+        this.ctx.fillStyle = CONFIG.colors.bg;
+        this.ctx.fillRect(0, 0, CONFIG.width, CONFIG.height);
+
+        // Update Logic
+        if (this.state === 'PLAY' || this.state === 'DIALOGUE') {
+            this.updateArena();
+            this.drawArena();
+            
+            // Only update player if we have one (Fix for null error)
+            if (this.player) {
+                this.player.update(this.getArenaRect());
+                this.player.draw(this.ctx);
+            }
+
+            this.updateBullets();
+            
+            if (this.state === 'PLAY') {
+                this.handleBattle();
+            }
+            
+            if (this.state === 'DIALOGUE') {
+                this.handleDialogue();
+            }
+        }
+
+        requestAnimationFrame(() => this.loop());
+    },
+
+    // --- GAMEPLAY SYSTEMS ---
+    updateArena() {
+        // Smooth resize
         this.arena.w += (this.arena.targetW - this.arena.w) * 0.1;
         this.arena.h += (this.arena.targetH - this.arena.h) * 0.1;
-
-        if (this.state === 'PLAY') {
-            this.player.update(this.arena);
-            
-            // Resilience Bomb
-            if (Input.isDown('x') && this.player.resilience >= 100) {
-                this.player.resilience = 0;
-                this.bullets = []; // Clear screen
-                // Flash effect
-                this.particles.push(new Particle(320, 240, '#fff')); // Placeholder
-                document.body.style.filter = 'invert(1)';
-                setTimeout(() => document.body.style.filter = 'none', 100);
-            }
-
-            // Bullet Spawning Logic
-            if (this.waitTimer > 0) {
-                this.waitTimer--;
-                this.spawnBullets();
-            } else {
-                // Battle over, reset box and go next
-                this.bullets = [];
-                this.arena.targetW = 200;
-                this.arena.targetH = 200;
-                // Wait for arena to shrink before text
-                if (Math.abs(this.arena.w - 200) < 5) {
-                    this.nextScriptEvent();
-                }
-            }
-
-            // Update Bullets
-            for (let i = this.bullets.length - 1; i >= 0; i--) {
-                let b = this.bullets[i];
-                b.update();
-                
-                // Collision
-                const dist = Math.sqrt((b.x - this.player.x)**2 + (b.y - this.player.y)**2);
-                
-                // Graze (Close shave)
-                if (dist < 25 && !b.grazed) {
-                    b.grazed = true;
-                    this.player.resilience = Math.min(100, this.player.resilience + 5);
-                    AudioSys.sfx('graze');
-                    this.particles.push(new Particle(this.player.x, this.player.y, '#00ffff'));
-                }
-
-                // Hit
-                if (dist < 6 && this.player.iframes === 0) {
-                    this.player.hp -= 4;
-                    this.player.iframes = 60; // 1 sec invuln
-                    AudioSys.sfx('hit');
-                    b.active = false;
-                    // Shake
-                    this.arena.x += (Math.random()-0.5)*20;
-                    this.arena.y += (Math.random()-0.5)*20;
-                    
-                    if (this.player.hp <= 0) {
-                        this.state = 'OVER';
-                        document.getElementById('game-over').classList.remove('hidden');
-                    }
-                }
-
-                if (!b.active) this.bullets.splice(i, 1);
-            }
-        }
-
-        // Particles
-        for (let i = this.particles.length - 1; i >= 0; i--) {
-            this.particles[i].update();
-            if (this.particles[i].life <= 0) this.particles.splice(i, 1);
-        }
-
-        // Dialogue Advance
-        if (this.state === 'DIALOGUE') {
-            if (Input.isDown('z') && !this.keyLock) {
-                this.keyLock = true;
-                this.nextScriptEvent();
-            }
-            if (!Input.isDown('z')) this.keyLock = false;
-        }
-
-        // HUD Update
-        document.getElementById('hp-display').innerText = `HP ${Math.max(0, this.player.hp)}/20`;
-        document.getElementById('tp-display').innerText = `${Math.floor(this.player.resilience)}%`;
+        
+        // Shake decay
+        if (this.arena.shake > 0) this.arena.shake *= 0.9;
+        if (this.arena.shake < 0.5) this.arena.shake = 0;
     },
 
-    spawnBullets() {
-        const t = this.frame;
-        const cx = CONSTANTS.WIDTH / 2;
-        const cy = CONSTANTS.HEIGHT / 2;
+    getArenaRect() {
+        const x = (CONFIG.width - this.arena.w) / 2 + (Math.random()-0.5)*this.arena.shake;
+        const y = (CONFIG.height - this.arena.h) / 2 + (Math.random()-0.5)*this.arena.shake;
+        return { x, y, w: this.arena.w, h: this.arena.h };
+    },
 
-        if (this.currentPattern === 'simple') {
-            if (t % 20 === 0) {
-                const angle = Math.atan2(this.player.y - 100, this.player.x - cx);
-                this.bullets.push(new Bullet(cx + (Math.random()-0.5)*200, 50, Math.PI/2 + (Math.random()-0.5), 3, 0));
-            }
-        } else if (this.currentPattern === 'spiral') {
-            if (t % 5 === 0) {
-                const angle = t * 0.1;
-                this.bullets.push(new Bullet(cx, cy - 100, angle, 4, 0));
-                this.bullets.push(new Bullet(cx, cy - 100, angle + Math.PI, 4, 0));
-            }
-        } else if (this.currentPattern === 'math') {
-            // Sine wave wall
-            if (t % 40 === 0) {
-                for (let i = 0; i < 10; i++) {
-                    const b = new Bullet(50 + i * 60, 50, Math.PI/2, 2, 1);
-                    this.bullets.push(b);
-                }
-            }
-        } else if (this.currentPattern === 'boss') {
-            // Chaos
+    drawArena() {
+        const rect = this.getArenaRect();
+        
+        // Draw Grid inside
+        this.ctx.save();
+        this.ctx.beginPath();
+        this.ctx.rect(rect.x, rect.y, rect.w, rect.h);
+        this.ctx.clip();
+        
+        // Moving grid
+        this.ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+        this.ctx.lineWidth = 2;
+        const offset = (Date.now() / 20) % 40;
+        for(let i=0; i<rect.w+40; i+=40) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(rect.x + i - offset, rect.y);
+            this.ctx.lineTo(rect.x + i - offset, rect.y + rect.h);
+            this.ctx.stroke();
+        }
+        this.ctx.restore();
+
+        // Draw Box Border
+        this.ctx.strokeStyle = 'white';
+        this.ctx.lineWidth = 4;
+        this.ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+        
+        // Draw Entropy Enemy (Abstract)
+        if (this.state === 'PLAY') {
+            this.ctx.drawImage(Sprites.enemy, CONFIG.width/2 - 32, rect.y - 80);
+        }
+    },
+
+    handleBattle() {
+        if (!this.player) return;
+
+        this.battleTimer--;
+        if (this.battleTimer <= 0) {
+            this.bullets = []; // Clear bullets between phases
+            this.arena.targetW = 10; // Shrink for dialogue
+            this.arena.targetH = 10;
+            // Wait for shrink
+            if (this.arena.w < 20) this.nextEvent();
+            return;
+        }
+
+        // Spawners
+        const t = this.battleTimer;
+        const cx = CONFIG.width/2;
+        const cy = CONFIG.height/2 - 100; // Enemy pos
+
+        if (this.pattern === 'rain') {
             if (t % 10 === 0) {
-                const angle = Math.random() * Math.PI * 2;
-                this.bullets.push(new Bullet(cx, cy, angle, 3, 0));
+                const x = this.getArenaRect().x + Math.random() * this.arena.w;
+                this.bullets.push(new Bullet(x, 0, Math.PI/2, 3, 'linear'));
             }
-            if (t % 60 === 0) {
-                // Aimed circle
-                for(let i=0; i<8; i++) {
-                    this.bullets.push(new Bullet(this.player.x + Math.cos(i)*100, this.player.y + Math.sin(i)*100, i, 1, 0));
+        }
+        else if (this.pattern === 'sine') {
+            if (t % 20 === 0) {
+                this.bullets.push(new Bullet(cx, cy, Math.PI/2, 2, 'sine'));
+            }
+        }
+        else if (this.pattern === 'circle') {
+            if (t % 40 === 0) {
+                for(let i=0; i<10; i++) {
+                    this.bullets.push(new Bullet(cx, cy, (Math.PI*2/10)*i + t*0.01, 2.5, 'linear'));
                 }
             }
         }
-    },
-
-    // --- RENDER LOOP ---
-    draw() {
-        const ctx = this.ctx;
-        ctx.fillStyle = CONSTANTS.COLORS.bg;
-        ctx.fillRect(0, 0, CONSTANTS.WIDTH, CONSTANTS.HEIGHT);
-
-        // Draw Dynamic Background Grid
-        ctx.strokeStyle = CONSTANTS.COLORS.grid;
-        ctx.lineWidth = 1;
-        const time = this.frame * 0.02;
-        
-        // Moving grid perspective
-        for(let i=0; i<20; i++) {
-            const y = (this.frame * 2 + i * 40) % CONSTANTS.HEIGHT;
-            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CONSTANTS.WIDTH, y); ctx.stroke();
-        }
-        for(let i=0; i<20; i++) {
-            const x = (i * 40);
-            // Perspective warp effect
-            const offset = Math.sin(time + i) * 20;
-            ctx.beginPath(); ctx.moveTo(x + offset, 0); ctx.lineTo(x - offset, CONSTANTS.HEIGHT); ctx.stroke();
-        }
-
-        // Draw Arena Box
-        ctx.strokeStyle = 'white';
-        ctx.lineWidth = 4;
-        ctx.strokeRect(this.arena.x, this.arena.y, this.arena.w, this.arena.h);
-        
-        // Clear outside arena (Undertale style masking)
-        // Actually, let's keep it visible but dark, focus on inside.
-        ctx.fillStyle = '#000';
-        ctx.fillRect(this.arena.x, this.arena.y, this.arena.w, this.arena.h);
-
-        // Draw Game Objects
-        if (this.state === 'PLAY' || this.state === 'DIALOGUE') {
-            this.player.draw(ctx);
-            this.bullets.forEach(b => b.draw(ctx));
-            this.particles.forEach(p => p.draw(ctx));
-        }
-        
-        // Draw Enemy (Abstract shape above box)
-        if (this.state === 'PLAY') {
-            ctx.drawImage(Assets.sprites.enemy, CONSTANTS.WIDTH/2 - 24, this.arena.y - 60);
+        else if (this.pattern === 'spiral') {
+            if (t % 4 === 0) {
+                this.bullets.push(new Bullet(cx, cy, t * 0.2, 3, 'linear'));
+                this.bullets.push(new Bullet(cx, cy, t * 0.2 + Math.PI, 3, 'linear'));
+            }
         }
     },
 
-    loop() {
-        if (this.state !== 'OVER' && this.state !== 'WIN') {
-            this.frame++;
-            this.update();
-            this.draw();
+    updateBullets() {
+        if (!this.player) return;
+
+        for (let i = this.bullets.length - 1; i >= 0; i--) {
+            let b = this.bullets[i];
+            b.update();
+            b.draw(this.ctx);
+
+            if (!b.active) {
+                this.bullets.splice(i, 1);
+                continue;
+            }
+
+            // Collision Logic
+            // 1. Graze (Close shave)
+            const dx = b.x - this.player.x;
+            const dy = b.y - this.player.y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+
+            if (dist < 25 && !b.grazed) {
+                b.grazed = true;
+                this.player.tp = Math.min(100, this.player.tp + 10);
+                Sfx.play('graze');
+                // Visual flare
+            }
+
+            // 2. Hit
+            if (dist < 6 && this.player.iframes === 0) {
+                this.player.hp -= 5;
+                this.player.iframes = 60; // 1s invincibility
+                Sfx.play('hit');
+                this.arena.shake = 10;
+                b.active = false;
+
+                if (this.player.hp <= 0) {
+                    this.state = 'OVER';
+                    document.getElementById('ui-layer').style.opacity = '0';
+                    document.getElementById('game-over').classList.remove('hidden');
+                }
+            }
         }
-        requestAnimationFrame(this.loop);
+
+        // Update UI Bars
+        document.getElementById('hp-val').style.width = (this.player.hp / this.player.maxHp * 100) + '%';
+        document.getElementById('hp-text').textContent = Math.max(0, this.player.hp) + "/20";
+        document.getElementById('tp-val').textContent = Math.floor(this.player.tp);
     },
 
-    // --- DIALOGUE SYSTEM ---
-    showDialogue(text, face) {
+    clearBullets() {
+        this.bullets = [];
+    },
+
+    // --- DIALOGUE HANDLING ---
+    showDialogue(msg, face) {
         const box = document.getElementById('dialogue-box');
         const txt = document.getElementById('dialogue-text');
-        const faceCanvas = document.getElementById('dialogue-face');
+        const faceIcon = document.getElementById('face-icon');
         
         box.style.display = 'block';
-        txt.innerText = ''; // Typewriter effect could go here
+        txt.textContent = '';
+        this.dialogueFullText = msg;
+        this.dialogueIdx = 0;
+        this.dialogueTimer = setInterval(() => this.typeWriter(), 30);
         
-        // Draw Face
-        const fctx = faceCanvas.getContext('2d');
-        fctx.fillStyle = '#000'; fctx.fillRect(0,0,64,64);
-        fctx.fillStyle = '#fff';
-        if(face === 'divija') {
-            // Draw heart face
-            fctx.font = '40px monospace'; fctx.fillText('♥', 15, 45);
-        } else if (face === 'system') {
-            // Draw grid face
-            fctx.strokeStyle = '#0f0'; fctx.strokeRect(10,10,44,44);
+        // Set Face
+        if (face === 'heart') {
+            faceIcon.innerHTML = '♥';
+            faceIcon.style.color = CONFIG.colors.heart;
         } else {
-            fctx.fillText('?', 20, 40);
+            faceIcon.innerHTML = '#';
+            faceIcon.style.color = CONFIG.colors.graze;
         }
+    },
 
-        // Typewriter logic
-        let i = 0;
-        const type = () => {
-            if (i < text.length) {
-                txt.textContent += text.charAt(i);
-                i++;
-                if(i%2===0) AudioSys.sfx('text');
-                setTimeout(type, 30);
-            }
-        };
-        type();
+    typeWriter() {
+        if (this.dialogueIdx < this.dialogueFullText.length) {
+            const char = this.dialogueFullText.charAt(this.dialogueIdx);
+            document.getElementById('dialogue-text').textContent += char;
+            this.dialogueIdx++;
+            if (this.dialogueIdx % 2 === 0) Sfx.play('text');
+        } else {
+            clearInterval(this.dialogueTimer);
+        }
+    },
+
+    handleDialogue() {
+        if (Input.isDown('z') && !this.keyLock && this.dialogueIdx >= this.dialogueFullText.length) {
+            this.keyLock = true;
+            this.nextEvent();
+        }
+        if (!Input.isDown('z')) this.keyLock = false;
+        // Instant text skip
+        if (Input.isDown('x')) {
+            this.dialogueIdx = this.dialogueFullText.length;
+            document.getElementById('dialogue-text').textContent = this.dialogueFullText;
+        }
     },
 
     hideDialogue() {
         document.getElementById('dialogue-box').style.display = 'none';
+        clearInterval(this.dialogueTimer);
     }
 };
 
-// --- DOM EVENT LISTENERS ---
+// --- EVENTS ---
 document.getElementById('btn-start').addEventListener('click', () => {
     document.getElementById('title-screen').classList.add('hidden');
-    Game.start();
+    Game.state = 'PLAY';
+    Game.reset();
 });
 
 document.getElementById('btn-retry').addEventListener('click', () => {
     document.getElementById('game-over').classList.add('hidden');
-    Game.start();
+    document.getElementById('ui-layer').style.opacity = '1';
+    Game.state = 'PLAY';
+    Game.reset();
 });
 
-// Boot
+// Start loop immediately to draw menu bg
 Game.init();
 
 </script>
