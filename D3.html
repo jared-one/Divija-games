@@ -1,1384 +1,1060 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Divija: Shattered Reflection (Enhanced Final)</title>
-
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
-
-    :root {
-      --bg-dark: #0a0a12;
-      --ui-white: #f0f0f0;
-      --accent-red: #ff3366;
-      --accent-gold: #ffd700;
-      --soul-green: #00ffcc;
-      --shadow-purple: #2d004d;
-    }
-
-    body {
-      margin: 0;
-      background-color: #000;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-family: 'VT323', monospace;
-      overflow: hidden;
-      user-select: none;
-      -webkit-user-select: none;
-      touch-action: none;
-    }
-
-    /* Scanline Overlay */
-    #crt-layer {
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background:
-        linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
-        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-      background-size: 100% 2px, 3px 100%;
-      pointer-events: none;
-      z-index: 999;
-    }
-
-    #game-stage {
-      width: 800px;
-      height: 600px;
-      background: var(--bg-dark);
-      border: 4px solid var(--ui-white);
-      position: relative;
-      box-shadow: 0 0 40px rgba(0, 255, 204, 0.1);
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* --- VISUALS --- */
-    #bg-canvas {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      z-index: 0; opacity: 0.6;
-    }
-
-    #actors-layer {
-      position: absolute; top: 10%; width: 100%; height: 40%;
-      z-index: 10;
-      display: flex; justify-content: space-between; padding: 0 100px; box-sizing: border-box;
-      align-items: flex-end;
-    }
-
-    .actor { width: 180px; height: 220px; transition: filter 0.5s, opacity 0.5s; }
-
-    /* --- UI & HUD --- */
-    #ui-layer {
-      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-      width: 740px; height: 220px; z-index: 20;
-      display: none;
-    }
-
-    #dialogue-box {
-      width: 100%; height: 100%;
-      border: 4px solid var(--ui-white);
-      background: #000;
-      padding: 20px; box-sizing: border-box;
-      font-size: 28px; color: white;
-      position: relative;
-    }
-
-    .stats-bar {
-      position: absolute; top: 20px; left: 20px;
-      color: white; font-size: 24px; z-index: 30;
-      text-shadow: 2px 2px black;
-    }
-
-    #hp-container {
-      display: inline-block; width: 150px; height: 20px;
-      background: #333; margin-left: 10px; vertical-align: middle;
-      border: 2px solid white;
-    }
-    #hp-fill {
-      width: 100%; height: 100%; background: var(--accent-gold);
-      transition: width 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
-    }
-    #hp-text { margin-left: 10px; }
-
-    #enemy-hp-container {
-      position: absolute; top: 20px; right: 20px;
-      width: 300px; height: 10px; background: #333;
-      border: 2px solid #555; z-index: 30;
-      display: none;
-    }
-    #enemy-hp-fill { width: 100%; height: 100%; background: var(--ui-white); transition: width 0.5s; }
-
-    /* Small sound toggle (keeps your UI style) */
-    #sound-toggle {
-      position: absolute;
-      top: 42px;
-      right: 20px;
-      z-index: 40;
-      border: 2px solid var(--ui-white);
-      color: var(--ui-white);
-      font-size: 18px;
-      padding: 4px 10px;
-      background: rgba(0,0,0,0.5);
-      cursor: pointer;
-      display: none; /* show after start */
-    }
-    #sound-toggle.off {
-      border-color: #666;
-      color: #888;
-    }
-
-    /* --- MENUS --- */
-    .choice-grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 15px;
-      margin-top: 20px; width: 80%;
-    }
-    .action-btn {
-      border: 2px solid var(--accent-red);
-      color: var(--accent-red);
-      padding: 10px 20px;
-      text-transform: uppercase;
-      font-size: 24px;
-      cursor: pointer;
-      text-align: left;
-      transition: all 0.1s;
-    }
-    .action-btn:hover, .action-btn.active {
-      background: var(--accent-red); color: black;
-      box-shadow: 0 0 15px var(--accent-red);
-    }
-
-    /* --- MINIGAME --- */
-    #bullet-box {
-      position: absolute;
-      top: 50%; left: 50%; transform: translate(-50%, -60%);
-      width: 250px; height: 250px;
-      border: 4px solid white;
-      background: black;
-      z-index: 50; display: none;
-    }
-
-    /* --- MOBILE CONTROLS --- */
-    #mobile-controls {
-      position: absolute; bottom: 20px; right: 20px;
-      z-index: 900; display: none;
-      width: 150px; height: 150px;
-    }
-    .dpad-row { display: flex; justify-content: center; width: 100%; }
-    .dpad-btn {
-      width: 45px; height: 45px;
-      background: rgba(255,255,255,0.2);
-      border: 2px solid rgba(255,255,255,0.5);
-      color: white; font-size: 20px;
-      margin: 2px;
-      display: flex; justify-content: center; align-items: center;
-      border-radius: 8px;
-      touch-action: manipulation;
-    }
-    .dpad-btn:active { background: rgba(255,255,255,0.6); }
-
-    /* --- ANIMATIONS --- */
-    .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
-    @keyframes shake {
-      10%, 90% { transform: translate3d(-4px, 0, 0); }
-      20%, 80% { transform: translate3d(6px, 0, 0); }
-      30%, 50%, 70% { transform: translate3d(-8px, 0, 0); }
-      40%, 60% { transform: translate3d(8px, 0, 0); }
-    }
-
-    .divija-float { animation: float 4s ease-in-out infinite; }
-    .echo-glitch { animation: glitch 0.18s infinite; opacity: 0.92; filter: drop-shadow(0 0 10px rgba(255, 51, 102, 0.35)); }
-    .echo-calm { animation: float 3.5s ease-in-out infinite; opacity: 0.85; filter: drop-shadow(0 0 10px rgba(240, 240, 240, 0.15)); }
-
-    @keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-10px);} }
-    @keyframes glitch {
-      0% { transform: translate(0,0); }
-      20% { transform: translate(-2px, 2px); }
-      40% { transform: translate(-2px, -2px); }
-      60% { transform: translate(2px, 2px); }
-      80% { transform: translate(2px, -2px); }
-      100% { transform: translate(0,0); }
-    }
-
-    /* --- START SCREEN --- */
-    #start-overlay {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      background: #000; z-index: 100;
-      display: flex; flex-direction: column;
-      justify-content: center; align-items: center;
-      text-align: center;
-    }
-    h1 { font-size: 60px; color: var(--ui-white); margin: 0; text-shadow: 4px 4px var(--accent-red); }
-    .blink { animation: blink 1s infinite; }
-    @keyframes blink { 50% { opacity: 0; } }
-  </style>
-</head>
-
-<body>
-  <div id="crt-layer"></div>
-
-  <div id="game-stage">
-    <canvas id="bg-canvas" width="800" height="600"></canvas>
-
-    <!-- BGM (Vercel root path) -->
-    <audio id="bgm" src="/fallen-down.mp3" preload="auto" loop playsinline></audio>
-
-    <!-- HUD -->
-    <div class="stats-bar">
-      DIVIJA <span style="color:var(--accent-red)">LV 1</span>
-      <div id="hp-container"><div id="hp-fill"></div></div>
-      <span id="hp-text">20/20</span>
-    </div>
-
-    <div id="enemy-hp-container"><div id="enemy-hp-fill"></div></div>
-    <div id="sound-toggle">SOUND: ON</div>
-
-    <!-- SVGs (improved but same vibe) -->
-    <svg width="0" height="0">
-      <defs>
-        <linearGradient id="skinGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#e6c3a2"/>
-          <stop offset="1" stop-color="#caa07f"/>
-        </linearGradient>
-
-        <linearGradient id="hoodGrad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stop-color="#0f0f10"/>
-          <stop offset="1" stop-color="#242428"/>
-        </linearGradient>
-
-        <linearGradient id="shirtGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#4558ff"/>
-          <stop offset="1" stop-color="#2c38a8"/>
-        </linearGradient>
-
-        <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="2.2" result="blur"/>
-          <feMerge>
-            <feMergeNode in="blur"/>
-            <feMergeNode in="SourceGraphic"/>
-          </feMerge>
-        </filter>
-
-        <!-- DIVIJA -->
-        <g id="svg-divija">
-          <ellipse cx="100" cy="240" rx="62" ry="10" fill="rgba(0,0,0,0.55)"/>
-
-          <!-- scarf / ribbon -->
-          <path d="M55,120 C85,105 115,105 145,120"
-                stroke="#ff3366" stroke-width="14" stroke-linecap="round" opacity="0.95">
-            <animate attributeName="d"
-              values="M55,120 C85,105 115,105 145,120;
-                      M55,120 C85,112 115,98 145,120;
-                      M55,120 C85,105 115,105 145,120"
-              dur="2.6s" repeatCount="indefinite"/>
-          </path>
-
-          <!-- body -->
-          <rect x="66" y="120" width="68" height="98" rx="12" fill="url(#shirtGrad)" />
-          <rect x="70" y="125" width="60" height="90" rx="10" fill="rgba(0,0,0,0.10)"/>
-
-          <!-- arms -->
-          <path d="M68,140 Q40,160 50,192"
-                stroke="url(#skinGrad)" stroke-width="12" stroke-linecap="round" fill="none"/>
-          <path d="M132,140 Q160,160 150,192"
-                stroke="url(#skinGrad)" stroke-width="12" stroke-linecap="round" fill="none"/>
-
-          <!-- head -->
-          <circle cx="100" cy="78" r="36" fill="url(#skinGrad)"/>
-          <!-- hair/hood -->
-          <path d="M56,60 Q100,12 144,60 L144,106 Q100,86 56,106 Z" fill="url(#hoodGrad)"/>
-          <path d="M62,64 Q100,24 138,64" stroke="rgba(255,51,102,0.75)" stroke-width="5" fill="none"/>
-
-          <!-- eyes -->
-          <ellipse id="eyeL" cx="88" cy="80" rx="3.2" ry="5.2" fill="#1b1b1b">
-            <animate attributeName="ry" values="5.2;5.2;0.4;5.2" dur="4.8s" repeatCount="indefinite"/>
-          </ellipse>
-          <ellipse id="eyeR" cx="112" cy="80" rx="3.2" ry="5.2" fill="#1b1b1b">
-            <animate attributeName="ry" values="5.2;5.2;0.4;5.2" dur="4.8s" repeatCount="indefinite"/>
-          </ellipse>
-
-          <!-- small mouth -->
-          <path d="M96,94 Q100,97 104,94" stroke="#3a2a2a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-
-          <!-- tiny heart charm -->
-          <path d="M100,150
-                   C96,143 86,145 90,155
-                   C92,160 100,165 100,165
-                   C100,165 108,160 110,155
-                   C114,145 104,143 100,150 Z"
-                fill="rgba(255,215,0,0.85)" filter="url(#softGlow)"/>
-        </g>
-
-        <!-- ECHO -->
-        <g id="svg-echo">
-          <!-- shards -->
-          <g opacity="0.95" filter="url(#softGlow)">
-            <polygon points="100,42 148,160 52,160" fill="#101014" stroke="#f0f0f0" stroke-width="2">
-              <animate attributeName="points"
-                values="100,42 148,160 52,160;
-                        100,32 158,150 42,150;
-                        100,42 148,160 52,160"
-                dur="0.18s" repeatCount="indefinite"/>
-            </polygon>
-
-            <polygon points="35,110 58,128 30,150" fill="#0b0b0f" stroke="rgba(240,240,240,0.7)" stroke-width="1"/>
-            <polygon points="165,90 150,120 178,132" fill="#0b0b0f" stroke="rgba(240,240,240,0.7)" stroke-width="1"/>
-            <polygon points="78,170 100,190 62,210" fill="#0b0b0f" stroke="rgba(240,240,240,0.7)" stroke-width="1"/>
-            <polygon points="122,170 138,210 100,192" fill="#0b0b0f" stroke="rgba(240,240,240,0.7)" stroke-width="1"/>
-          </g>
-
-          <!-- eye -->
-          <circle cx="100" cy="112" r="13" fill="rgba(255,0,0,0.78)">
-            <animate attributeName="r" values="13;12;14;13" dur="1.4s" repeatCount="indefinite"/>
-          </circle>
-          <circle cx="100" cy="112" r="4" fill="#140000"/>
-
-          <!-- glitch rectangles -->
-          <rect x="40" y="78" width="12" height="10" fill="#fff" opacity="0.35">
-            <animate attributeName="x" values="40;44;38;40" dur="0.24s" repeatCount="indefinite"/>
-          </rect>
-          <rect x="150" y="58" width="10" height="9" fill="#fff" opacity="0.35">
-            <animate attributeName="y" values="58;66;54;58" dur="0.21s" repeatCount="indefinite"/>
-          </rect>
-        </g>
-      </defs>
-    </svg>
-
-    <div id="actors-layer">
-      <svg class="actor divija-float" viewBox="0 0 200 250"><use href="#svg-divija"/></svg>
-      <svg class="actor" id="echo-sprite" viewBox="0 0 200 250" style="opacity:0"><use href="#svg-echo"/></svg>
-    </div>
-
-    <!-- UI Box -->
-    <div id="ui-layer">
-      <div id="dialogue-box">
-        <div id="writer-text">* The reflection is silent.</div>
-
-        <div id="main-menu" class="choice-grid" style="display:none;">
-          <div class="action-btn active" data-idx="0">FIGHT</div>
-          <div class="action-btn" data-idx="1">ACT</div>
-          <div class="action-btn" data-idx="2">ITEM</div>
-          <div class="action-btn" data-idx="3">MERCY</div>
-        </div>
-
-        <div id="act-menu" class="choice-grid" style="display:none;">
-          <div class="action-btn active" data-idx="0">CHECK</div>
-          <div class="action-btn" data-idx="1">LISTEN</div>
-          <div class="action-btn" data-idx="2">REASSURE</div>
-          <div class="action-btn" data-idx="3">BACK</div>
-        </div>
-
-        <div class="tap-hint" style="font-size:18px; color:#888; position:absolute; bottom:10px; right:10px;">
-          [ENTER] or [TAP]
-        </div>
-      </div>
-    </div>
-
-    <canvas id="bullet-box" width="250" height="250"></canvas>
-
-    <!-- Mobile D-PAD -->
-    <div id="mobile-controls">
-      <div class="dpad-row"><div class="dpad-btn" id="m-up">▲</div></div>
-      <div class="dpad-row">
-        <div class="dpad-btn" id="m-left">◀</div>
-        <div class="dpad-btn" style="opacity:0"></div>
-        <div class="dpad-btn" id="m-right">▶</div>
-      </div>
-      <div class="dpad-row"><div class="dpad-btn" id="m-down">▼</div></div>
-    </div>
-
-    <!-- Start Screen -->
-    <div id="start-overlay">
-      <h1>DIVIJA</h1>
-      <h2 style="color:#666">SHATTERED REFLECTION</h2>
-      <br />
-      <p class="blink">[ PRESS ENTER OR TAP ]</p>
-      <p style="font-size:14px; color:#444">Recommended: Sound ON</p>
-    </div>
-  </div>
-
-  <script>
-    /*
-      Enhanced version:
-      - Better audio mixing + BGM fade
-      - Fair hit handling (invulnerability)
-      - Richer narrative with phase transitions
-      - Improved menu navigation (2x2 grid)
-      - Bullet patterns scale with "pressure" (violence makes it harder)
-    */
-
-    // ------------------ AUDIO ------------------
-    const AudioSys = {
-      ctx: null,
-      master: null,
-      sfxGain: null,
-      muted: false,
-
-      init() {
-        if (!this.ctx) {
-          this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-          this.master = this.ctx.createGain();
-          this.sfxGain = this.ctx.createGain();
-
-          this.master.gain.value = 0.9;
-          this.sfxGain.gain.value = 0.9;
-
-          this.sfxGain.connect(this.master);
-          this.master.connect(this.ctx.destination);
-        }
-        if (this.ctx.state === 'suspended') this.ctx.resume();
-      },
-
-      setMuted(m) {
-        this.muted = !!m;
-        if (this.master) this.master.gain.value = this.muted ? 0 : 0.9;
-        BGM.setMuted(this.muted);
-      },
-
-      playTone(freq, type='sine', dur=0.08, vol=0.08) {
-        if (this.muted) return;
-        if (!this.ctx) return;
-
-        const t = this.ctx.currentTime;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, t);
-
-        gain.gain.setValueAtTime(Math.max(0.0001, vol), t);
-        gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-
-        osc.connect(gain);
-        gain.connect(this.sfxGain);
-
-        osc.start(t);
-        osc.stop(t + dur);
-      },
-
-      playNoise(dur=0.10, vol=0.10, hpFreq=900) {
-        if (this.muted) return;
-        if (!this.ctx) return;
-
-        const sr = this.ctx.sampleRate;
-        const len = Math.floor(sr * dur);
-        const buf = this.ctx.createBuffer(1, len, sr);
-        const data = buf.getChannelData(0);
-        for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
-
-        const src = this.ctx.createBufferSource();
-        src.buffer = buf;
-
-        const filter = this.ctx.createBiquadFilter();
-        filter.type = "highpass";
-        filter.frequency.value = hpFreq;
-
-        const gain = this.ctx.createGain();
-        gain.gain.value = vol;
-
-        src.connect(filter);
-        filter.connect(gain);
-        gain.connect(this.sfxGain);
-
-        src.start();
-        src.stop(this.ctx.currentTime + dur);
-      },
-
-      playSFX(type) {
-        this.init();
-        if (this.muted) return;
-
-        switch (type) {
-          case 'select':
-            this.playTone(440, 'square', 0.06, 0.07);
-            break;
-          case 'confirm':
-            this.playTone(660, 'square', 0.07, 0.08);
-            this.playTone(990, 'triangle', 0.05, 0.04);
-            break;
-          case 'start':
-            this.playTone(330, 'triangle', 0.08, 0.08);
-            this.playTone(660, 'triangle', 0.12, 0.07);
-            break;
-          case 'text':
-            this.playTone(210, 'square', 0.04, 0.025);
-            break;
-          case 'glitch':
-            this.playNoise(0.09, 0.10, 1100);
-            this.playTone(120, 'sawtooth', 0.10, 0.05);
-            break;
-          case 'hit':
-            this.playNoise(0.10, 0.14, 800);
-            this.playTone(150, 'sawtooth', 0.12, 0.10);
-            this.playTone(100, 'sawtooth', 0.12, 0.08);
-            break;
-          case 'heal':
-            this.playTone(440, 'sine', 0.16, 0.07);
-            setTimeout(() => this.playTone(660, 'sine', 0.28, 0.07), 90);
-            break;
-          case 'menuOpen':
-            this.playTone(523.25, 'triangle', 0.08, 0.06);
-            break;
-          case 'menuClose':
-            this.playTone(392.00, 'triangle', 0.08, 0.06);
-            break;
-          case 'dodgeStart':
-            this.playNoise(0.09, 0.08, 1200);
-            break;
-          case 'dodgeEnd':
-            this.playTone(440, 'triangle', 0.07, 0.05);
-            break;
-          case 'win':
-            this.playTone(523.25, 'triangle', 0.10, 0.08);
-            setTimeout(() => this.playTone(659.25, 'triangle', 0.12, 0.08), 90);
-            setTimeout(() => this.playTone(783.99, 'triangle', 0.14, 0.08), 190);
-            break;
-          case 'lose':
-            this.playTone(220, 'sawtooth', 0.18, 0.10);
-            setTimeout(() => this.playTone(164.81, 'sawtooth', 0.22, 0.10), 140);
-            break;
-        }
-      }
-    };
-
-    const BGM = {
-      el: null,
-      started: false,
-      muted: false,
-      targetVol: 0.38,
-      fadeMs: 900,
-
-      init() {
-        this.el = document.getElementById('bgm');
-      },
-
-      setMuted(m) {
-        this.muted = !!m;
-        if (!this.el) return;
-        this.el.muted = this.muted;
-        if (this.muted) this.el.volume = 0;
-      },
-
-      async start() {
-        if (!this.el || this.started) return;
-        this.started = true;
-
-        try {
-          this.el.currentTime = 0;
-          this.el.volume = 0;
-          this.el.muted = this.muted;
-
-          await this.el.play();
-
-          const steps = 22;
-          const stepTime = this.fadeMs / steps;
-          let i = 0;
-          const timer = setInterval(() => {
-            i++;
-            if (this.muted) this.el.volume = 0;
-            else this.el.volume = Math.min(this.targetVol, (this.targetVol * i) / steps);
-            if (i >= steps) clearInterval(timer);
-          }, stepTime);
-        } catch (e) {
-          // Autoplay blocked. We'll try again on next user gesture.
-          this.started = false;
-        }
-      },
-
-      fadeOut(ms=700) {
-        if (!this.el) return;
-        const startVol = this.el.volume;
-        const steps = 18;
-        const stepTime = ms / steps;
-        let i = 0;
-        const timer = setInterval(() => {
-          i++;
-          const v = Math.max(0, startVol * (1 - i / steps));
-          this.el.volume = v;
-          if (i >= steps) {
-            clearInterval(timer);
-            this.el.pause();
-          }
-        }, stepTime);
-      }
-    };
-
-    document.addEventListener('visibilitychange', () => {
-      if (!BGM.el) return;
-      if (document.hidden) BGM.el.pause();
-      else if (BGM.started && !BGM.muted) BGM.el.play().catch(()=>{});
-    });
-
-    // ------------------ GAME STATE ------------------
-    const Game = {
-      state: 'start', // start, dialogue, menu, act_menu, dodge, gameover
-      hp: 20,
-      maxHp: 20,
-
-      enemyHp: 100,
-      enemyMax: 100,
-
-      actLevel: 0,     // empathy progress
-      pressure: 0,     // increases with violence, lowers with empathy. affects patterns.
-      phase: 1,        // 1..3
-      flags: {
-        phase2Shown: false,
-        phase3Shown: false,
-        endingShown: false
-      },
-
-      items: {
-        breath: 2
-      },
-
-      textSpeed: 30,
-      loopId: null,
-      invulnUntil: 0,
-    };
-
-    // ------------------ DOM ------------------
-    const UI = {
-      overlay: document.getElementById('start-overlay'),
-      writer: document.getElementById('writer-text'),
-      mainMenu: document.getElementById('main-menu'),
-      actMenu: document.getElementById('act-menu'),
-      hpFill: document.getElementById('hp-fill'),
-      hpText: document.getElementById('hp-text'),
-      enemyBar: document.getElementById('enemy-hp-container'),
-      enemyFill: document.getElementById('enemy-hp-fill'),
-      echo: document.getElementById('echo-sprite'),
-      bulletCanvas: document.getElementById('bullet-box'),
-      dialogueBox: document.getElementById('ui-layer'),
-      mobileControls: document.getElementById('mobile-controls'),
-      soundToggle: document.getElementById('sound-toggle'),
-      stage: document.getElementById('game-stage'),
-    };
-
-    // ------------------ INPUT ------------------
-    const Keys = {
-      w:false,a:false,s:false,d:false,
-      ArrowUp:false,ArrowDown:false,ArrowLeft:false,ArrowRight:false
-    };
-
-    function setKey(k, v) {
-      if (Keys.hasOwnProperty(k)) Keys[k] = v;
-      const lower = (typeof k === 'string') ? k.toLowerCase() : k;
-      if (Keys.hasOwnProperty(lower)) Keys[lower] = v;
-    }
-
-    window.addEventListener('keydown', (e) => {
-      setKey(e.key, true);
-
-      if (e.key === 'Enter' || e.key === ' ') handleConfirm();
-      if (Game.state === 'menu' || Game.state === 'act_menu') handleMenuNav(e.key);
-    });
-
-    window.addEventListener('keyup', (e) => setKey(e.key, false));
-
-    // Mobile D-Pad Events
-    ['up','down','left','right'].forEach(dir => {
-      const btn = document.getElementById(`m-${dir}`);
-      btn.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        Keys[`Arrow${dir.charAt(0).toUpperCase()+dir.slice(1)}`] = true;
-      }, {passive:false});
-      btn.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        Keys[`Arrow${dir.charAt(0).toUpperCase()+dir.slice(1)}`] = false;
-      }, {passive:false});
-    });
-
-    UI.soundToggle.addEventListener('click', (e) => {
-      e.stopPropagation();
-      AudioSys.init();
-      AudioSys.setMuted(!AudioSys.muted);
-      UI.soundToggle.classList.toggle('off', AudioSys.muted);
-      UI.soundToggle.textContent = AudioSys.muted ? 'SOUND: OFF' : 'SOUND: ON';
-      AudioSys.playSFX('select');
-    });
-
-    document.body.addEventListener('click', (e) => {
-      // menu clicks
-      if (e.target.classList.contains('action-btn')) {
-        const idx = parseInt(e.target.dataset.idx, 10);
-        if (Game.state === 'menu') {
-          selectMenuOption(idx);
-          executeAction();
-        } else if (Game.state === 'act_menu') {
-          selectMenuOption(idx);
-          executeAct();
-        }
-        return;
-      }
-
-      // tap to advance (but not during dodge)
-      if (Game.state !== 'menu' && Game.state !== 'act_menu' && Game.state !== 'dodge') {
-        handleConfirm();
-      }
-    });
-
-    // ------------------ MENU NAV (2x2) ------------------
-    let menuIdx = 0;
-
-    function handleMenuNav(key) {
-      // 2x2 grid: idx 0 1 / 2 3
-      let r = Math.floor(menuIdx / 2);
-      let c = menuIdx % 2;
-
-      const k = key.toLowerCase();
-      const left  = (key === 'ArrowLeft' || k === 'a');
-      const right = (key === 'ArrowRight' || k === 'd');
-      const up    = (key === 'ArrowUp' || k === 'w');
-      const down  = (key === 'ArrowDown' || k === 's');
-
-      if (left) c = (c + 1) % 2;        // flip col
-      if (right) c = (c + 1) % 2;       // flip col (same effect; feels snappy)
-      if (up) r = (r + 1) % 2;          // flip row
-      if (down) r = (r + 1) % 2;        // flip row
-
-      const newIdx = r * 2 + c;
-      if (newIdx !== menuIdx) {
-        menuIdx = newIdx;
-        selectMenuOption(menuIdx);
-        AudioSys.playSFX('select');
-      }
-    }
-
-    function selectMenuOption(idx) {
-      menuIdx = idx;
-      const parent = (Game.state === 'menu') ? UI.mainMenu : UI.actMenu;
-      Array.from(parent.children).forEach((btn, i) => {
-        if (i === idx) btn.classList.add('active');
-        else btn.classList.remove('active');
-      });
-    }
-
-    // ------------------ TYPING ------------------
-    const Typing = {
-      queueData: [],
-      callback: null,
-      isBusy: false,
-      interval: null,
-      currentLine: "",
-      charIndex: 0,
-
-      queue(lines, onComplete) {
-        this.queueData = lines;
-        this.callback = onComplete || null;
-        Game.state = 'dialogue';
-        this.isBusy = false;
-        this.next();
-      },
-
-      next() {
-        if (this.isBusy) return;
-
-        if (this.queueData.length === 0) {
-          if (this.callback) this.callback();
-          return;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Blaster | Unlock dream</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --void: #050505;
+            --void-light: #0a0a0a;
+            --signal: #E0E0E0;
+            --math-cyan: #00F3FF;
+            --warn-red: #FF2A6D;
+            --divine-gold: #FFD700;
+            --purple-glow: #9D00FF;
         }
 
-        const item = this.queueData.shift();
-
-        if (typeof item === 'function') {
-          item();
-          this.next();
-          return;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        this.isBusy = true;
-        this.currentLine = item;
-        this.charIndex = 0;
-        UI.writer.innerHTML = "";
-        clearInterval(this.interval);
-
-        this.interval = setInterval(() => {
-          UI.writer.innerHTML += this.currentLine.charAt(this.charIndex);
-          if (this.currentLine.charAt(this.charIndex) !== ' ') AudioSys.playSFX('text');
-          this.charIndex++;
-
-          if (this.charIndex >= this.currentLine.length) {
-            this.finish(true);
-          }
-        }, Game.textSpeed);
-      },
-
-      finish(completedNaturally=false) {
-        clearInterval(this.interval);
-        if (!completedNaturally) UI.writer.innerHTML = this.currentLine;
-        this.isBusy = false;
-      }
-    };
-
-    // ------------------ CORE FLOW ------------------
-    function handleConfirm() {
-      AudioSys.init();
-      BGM.start();
-
-      if (Game.state === 'start') {
-        UI.overlay.style.display = 'none';
-        UI.dialogueBox.style.display = 'block';
-        UI.soundToggle.style.display = 'block';
-        AudioSys.playSFX('start');
-        startStory();
-        return;
-      }
-
-      if (Game.state === 'dialogue') {
-        if (Typing.isBusy) Typing.finish(false);
-        else Typing.next();
-        return;
-      }
-
-      if (Game.state === 'menu') executeAction();
-      if (Game.state === 'act_menu') executeAct();
-    }
-
-    function updateHUD() {
-      const pct = Math.max(0, (Game.hp / Game.maxHp) * 100);
-      UI.hpFill.style.width = pct + '%';
-      UI.hpText.textContent = Math.max(0, Game.hp) + "/" + Game.maxHp;
-
-      const ePct = Math.max(0, (Game.enemyHp / Game.enemyMax) * 100);
-      UI.enemyFill.style.width = ePct + '%';
-    }
-
-    function showMenu(customText) {
-      Game.state = 'menu';
-      UI.actMenu.style.display = 'none';
-      UI.mainMenu.style.display = 'grid';
-      UI.writer.innerHTML = customText || "* The Echo awaits your answer.";
-      menuIdx = 0;
-      selectMenuOption(0);
-      AudioSys.playSFX('menuOpen');
-    }
-
-    function showActMenu() {
-      Game.state = 'act_menu';
-      UI.mainMenu.style.display = 'none';
-      UI.actMenu.style.display = 'grid';
-
-      // dynamic label to add emotional progression without changing layout
-      UI.actMenu.children[1].textContent = (Game.actLevel >= 2) ? "REMEMBER" : "LISTEN";
-
-      UI.writer.innerHTML = "* What will you do?";
-      menuIdx = 0;
-      selectMenuOption(0);
-      AudioSys.playSFX('menuOpen');
-    }
-
-    // ------------------ STORY ------------------
-    function startStory() {
-      Game.hp = Game.maxHp;
-      Game.enemyHp = Game.enemyMax;
-      Game.actLevel = 0;
-      Game.pressure = 0;
-      Game.phase = 1;
-      Game.flags.phase2Shown = false;
-      Game.flags.phase3Shown = false;
-      Game.flags.endingShown = false;
-      Game.items.breath = 2;
-      updateHUD();
-
-      Typing.queue([
-        "* The mirror is cold to the touch.",
-        "* Your fingertips leave fog on the glass.",
-        "* For a moment... the fog looks like handwriting.",
-        "* It spells your name.",
-        () => {
-          UI.enemyBar.style.display = 'block';
-        },
-        "* The reflection lags behind you by half a heartbeat.",
-        "* And then it smiles when you do not.",
-        () => {
-          UI.echo.style.opacity = 1;
-          UI.echo.classList.add('echo-glitch');
-          AudioSys.playSFX('glitch');
-        },
-        "ECHO: \"Do you know what they see when they look at you?\"",
-        "ECHO: \"Not talent.\"",
-        "ECHO: \"Not certainty.\"",
-        "ECHO: \"Only mistakes... wearing your face.\"",
-        "* Your Soul trembles.",
-        startTutorial
-      ]);
-    }
-
-    function startTutorial() {
-      Typing.queue([
-        "* TUTORIAL: Your Soul (Green) is fragile.",
-        "* Move with Arrow Keys or WASD.",
-        "* Avoid the white fragments.",
-        "* If you get hit, you’ll blink briefly (invulnerable for a moment).",
-      ], () => startDodge('tutorial'));
-    }
-
-    function maybePhaseTransitions(onDone) {
-      // Called after a dodge ends, before returning to menu, to add emotional beats.
-      if (!Game.flags.phase2Shown && Game.enemyHp <= 60) {
-        Game.flags.phase2Shown = true;
-        Game.phase = 2;
-        Typing.queue([
-          "* The Echo’s edges stop screaming.",
-          "* The cracks in it become... lines.",
-          "* Like something that was repaired, not ruined.",
-          "ECHO: \"I learned to talk like this.\"",
-          "ECHO: \"So you would listen.\"",
-          "* The mirror feels less like an enemy...",
-          "* and more like a confession."
-        ], onDone);
-        return;
-      }
-
-      if (!Game.flags.phase3Shown && Game.enemyHp <= 25) {
-        Game.flags.phase3Shown = true;
-        Game.phase = 3;
-        Typing.queue([
-          "* The Echo’s red eye flickers.",
-          "* Behind the glare... there is fear.",
-          "ECHO: \"If you stop hating yourself...\"",
-          "ECHO: \"what happens to me?\"",
-          "* You realize something painful:",
-          "* it was never trying to destroy you.",
-          "* it was trying to keep you small enough to be safe."
-        ], onDone);
-        return;
-      }
-
-      onDone();
-    }
-
-    // ------------------ ACTIONS ------------------
-    function executeAction() {
-      UI.mainMenu.style.display = 'none';
-      AudioSys.playSFX('confirm');
-
-      const actions = ['fight', 'act', 'item', 'mercy'];
-      const choice = actions[menuIdx];
-
-      if (choice === 'fight') {
-        // Violence reduces enemy HP a bit but increases pressure => harder dodges, more damage vibe
-        Game.enemyHp = Math.max(0, Game.enemyHp - 10);
-        Game.pressure = Math.min(10, Game.pressure + 2);
-        updateHUD();
-
-        Typing.queue([
-          "* You strike the glass.",
-          "* It cracks.",
-          "* The sound is exactly like your worst memory.",
-          "ECHO: \"See? That’s all you know.\"",
-          "* The Echo grows sharper."
-        ], () => startDodge('hard'));
-      }
-
-      if (choice === 'act') {
-        showActMenu();
-      }
-
-      if (choice === 'item') {
-        if (Game.items.breath <= 0) {
-          Typing.queue(["* (You have nothing left to use.)"], () => showMenu());
-          return;
+        body {
+            background: var(--void);
+            color: var(--signal);
+            font-family: 'JetBrains Mono', monospace;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            touch-action: none;
         }
 
-        if (Game.hp >= Game.maxHp) {
-          Typing.queue(["* Your HP is maxed out."], () => showMenu());
-          return;
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 1000px;
+            aspect-ratio: 16/9;
+            background: var(--void-light);
+            border: 2px solid var(--math-cyan);
+            box-shadow: 0 0 50px rgba(0, 243, 255, 0.25);
         }
 
-        Game.items.breath--;
-        Game.hp = Math.min(Game.maxHp, Game.hp + 9);
-        Game.pressure = Math.max(0, Game.pressure - 1);
-        updateHUD();
-        AudioSys.playSFX('heal');
-
-        Typing.queue([
-          "* You take a deep breath.",
-          "* Your shoulders drop by one impossible inch.",
-          `* (Breaths left: ${Game.items.breath})`,
-          "* HP recovered."
-        ], () => startDodge('easy'));
-      }
-
-      if (choice === 'mercy') {
-        // Mercy is about enough empathy progress and low pressure
-        const canSpare = (Game.actLevel >= 4) || (Game.enemyHp <= 0);
-        if (canSpare) {
-          winGame();
-        } else {
-          Typing.queue([
-            "* The Echo refuses to listen yet.",
-            "* It’s still speaking in borrowed cruelty.",
-            "* You need to REASSURE it more."
-          ], () => startDodge('medium'));
-        }
-      }
-    }
-
-    function executeAct() {
-      UI.actMenu.style.display = 'none';
-      AudioSys.playSFX('confirm');
-
-      const acts = ['check', 'listenOrRemember', 'reassure', 'back'];
-      const choice = acts[menuIdx];
-
-      if (choice === 'back') {
-        showMenu();
-        return;
-      }
-
-      if (choice === 'check') {
-        Typing.queue([
-          "* ECHO - ATK 5 DEF 0",
-          "* It is a manifestation of imposter syndrome.",
-          "* It feeds on uncertainty...",
-          "* ...and calls it honesty."
-        ], () => showMenu("* The Echo awaits your answer."));
-        return; // does not end turn
-      }
-
-      if (choice === 'listenOrRemember') {
-        // As actLevel grows, "LISTEN" becomes "REMEMBER"
-        if (Game.actLevel >= 2) {
-          Game.actLevel++;
-          Game.enemyHp = Math.max(0, Game.enemyHp - 18);
-          Game.pressure = Math.max(0, Game.pressure - 2);
-          updateHUD();
-
-          Typing.queue([
-            "* You remember a time you tried anyway.",
-            "* Not perfectly.",
-            "* Just honestly.",
-            "ECHO: \"That doesn't count...\"",
-            "* You whisper: \"It does.\"",
-            "* The mirror warms."
-          ], () => startDodge('easy'));
-        } else {
-          Game.actLevel++;
-          Game.enemyHp = Math.max(0, Game.enemyHp - 12);
-          Game.pressure = Math.max(0, Game.pressure - 1);
-          updateHUD();
-
-          Typing.queue([
-            "* You listen to the voices without obeying them.",
-            "ECHO: \"Everyone is better than you.\"",
-            "* You say: \"Maybe.\"",
-            "* You add: \"But I’m still allowed to be here.\""
-          ], () => startDodge('medium'));
-        }
-        return;
-      }
-
-      if (choice === 'reassure') {
-        Game.actLevel++;
-        Game.enemyHp = Math.max(0, Game.enemyHp - 28);
-        Game.pressure = Math.max(0, Game.pressure - 2);
-        updateHUD();
-
-        const linesByProgress = [
-          "* You say: \"I know you're scared.\"",
-          "* You say: \"We’re learning.\"",
-          "* You say: \"It’s okay to make mistakes.\"",
-          "* You say: \"You tried to protect me.\"",
-          "* You say: \"But we don’t need pain as proof anymore.\""
-        ];
-
-        const text = linesByProgress[Math.min(Game.actLevel - 1, linesByProgress.length - 1)];
-
-        Typing.queue([
-          text,
-          "ECHO: \"...\"",
-          "* The Echo’s shaking slows.",
-        ], () => startDodge('easy'));
-        return;
-      }
-    }
-
-    // ------------------ BULLET HELL ------------------
-    function startDodge(difficulty) {
-      Game.state = 'dodge';
-      UI.writer.innerHTML = "";
-      UI.bulletCanvas.style.display = 'block';
-      UI.mainMenu.style.display = 'none';
-      UI.actMenu.style.display = 'none';
-
-      AudioSys.playSFX('dodgeStart');
-
-      if (window.innerWidth < 800) UI.mobileControls.style.display = 'block';
-
-      const ctx = UI.bulletCanvas.getContext('2d');
-      const W = 250, H = 250;
-
-      let soul = { x: 125, y: 125 };
-      let bullets = [];
-      let frame = 0;
-
-      // Duration scales a bit with phase/difficulty (emotional tension)
-      const baseFrames = (difficulty === 'tutorial') ? 280 : (difficulty === 'easy' ? 340 : (difficulty === 'medium' ? 400 : 440));
-      const maxFrames = Math.floor(baseFrames + Game.pressure * 6);
-
-      function spawnBullet() {
-        // pressure increases spawn rate slightly
-        const p = Game.pressure;
-
-        if (difficulty === 'tutorial') {
-          if (frame % 22 === 0) bullets.push({x: Math.random()*W, y: -10, vx: 0, vy: 2.1, r: 4, type:'white'});
-          return;
+        #game-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
         }
 
-        if (difficulty === 'easy') {
-          if (frame % Math.max(12, 16 - Math.floor(p/2)) === 0) {
-            bullets.push({x: Math.random()*W, y: -10, vx: 0, vy: 2.9 + p*0.05, r: 4, type:'white'});
-          }
-          // gentle side drift
-          if (Game.phase >= 2 && frame % 60 === 0) {
-            bullets.push({x: -10, y: 20 + Math.random()*210, vx: 2.1, vy: 0, r: 4, type:'white'});
-          }
-          return;
+        #ui-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 25px;
         }
 
-        if (difficulty === 'medium') {
-          // spiral-ish
-          if (frame % Math.max(9, 12 - Math.floor(p/2)) === 0) {
-            const a = frame * 0.12;
-            bullets.push({x: 125, y: -10, vx: Math.sin(a) * (2.2 + p*0.1), vy: 3.0 + p*0.06, r: 4, type:'white'});
-          }
-          // aimed shots (phase 2+)
-          if (Game.phase >= 2 && frame % 70 === 0) {
-            const dx = soul.x - 125;
-            const dy = soul.y - 0;
-            const mag = Math.max(1, Math.hypot(dx, dy));
-            const sp = 3.0 + p*0.08;
-            bullets.push({x: 125, y: -10, vx: (dx/mag)*sp, vy: (dy/mag)*sp, r: 4, type:'white'});
-          }
-          return;
+        .hud-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
         }
 
-        // HARD
-        // crossfire + sweep
-        if (frame % Math.max(7, 10 - Math.floor(p/2)) === 0) {
-          const a = frame * 0.14;
-          bullets.push({x: 125, y: -10, vx: Math.sin(a) * (3.0 + p*0.12), vy: 3.2 + p*0.06, r: 4, type:'white'});
-        }
-        if (frame % 45 === 0) {
-          bullets.push({x: 0, y: Math.random()*220+15, vx: 3.2 + p*0.08, vy: 0, r: 4, type:'white'});
-          bullets.push({x: W, y: Math.random()*220+15, vx: -(3.2 + p*0.08), vy: 0, r: 4, type:'white'});
+        .score-display {
+            font-size: 12px;
+            color: var(--math-cyan);
+            letter-spacing: 0.15em;
         }
 
-        // phase 3: "mirror shard" bouncers (scarier but fair)
-        if (Game.phase >= 3 && frame % 80 === 0) {
-          const vx = (Math.random() < 0.5 ? -1 : 1) * (2.4 + p*0.05);
-          const vy = 2.6 + p*0.05;
-          bullets.push({x: 20 + Math.random()*210, y: 10, vx, vy, r: 5, type:'shard', bounces: 2});
-        }
-      }
-
-      function loop(ts) {
-        if (Game.state !== 'dodge') return;
-
-        // background trails
-        ctx.fillStyle = 'rgba(0,0,0,0.35)';
-        ctx.fillRect(0,0,W,H);
-
-        // move soul
-        const spd = 4;
-        if ((Keys.w || Keys.ArrowUp) && soul.y > 8) soul.y -= spd;
-        if ((Keys.s || Keys.ArrowDown) && soul.y < H-8) soul.y += spd;
-        if ((Keys.a || Keys.ArrowLeft) && soul.x > 8) soul.x -= spd;
-        if ((Keys.d || Keys.ArrowRight) && soul.x < W-8) soul.x += spd;
-
-        // draw soul (blink during invuln)
-        const now = performance.now();
-        const inv = now < Game.invulnUntil;
-        if (!inv || Math.floor(now/80) % 2 === 0) {
-          ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--soul-green').trim();
-          ctx.beginPath(); ctx.arc(soul.x, soul.y, 6, 0, Math.PI*2); ctx.fill();
+        .score-value {
+            color: var(--divine-gold);
+            font-size: 28px;
+            font-weight: 700;
+            margin-top: 5px;
         }
 
-        // spawn bullets
-        spawnBullet();
+        .entropy-section {
+            text-align: right;
+        }
 
-        // update/draw bullets
-        for (let i = bullets.length - 1; i >= 0; i--) {
-          const b = bullets[i];
+        .entropy-bar {
+            width: 220px;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 5px;
+            overflow: hidden;
+            border: 1px solid rgba(0, 243, 255, 0.2);
+        }
 
-          b.x += b.vx;
-          b.y += b.vy;
+        .entropy-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--math-cyan), var(--warn-red));
+            transition: width 0.4s ease, filter 0.4s ease;
+        }
 
-          // shard bounce behavior
-          if (b.type === 'shard') {
-            // bounce off walls a limited number of times
-            if ((b.x < 6 && b.vx < 0) || (b.x > W-6 && b.vx > 0)) {
-              if (b.bounces > 0) {
-                b.vx *= -1;
-                b.bounces--;
-              }
+        .entropy-fill.low {
+            background: linear-gradient(90deg, var(--divine-gold), var(--math-cyan));
+            filter: drop-shadow(0 0 10px var(--divine-gold));
+        }
+
+        .entropy-label {
+            font-size: 10px;
+            color: var(--math-cyan);
+            margin-top: 6px;
+            letter-spacing: 0.1em;
+        }
+
+        .entropy-value {
+            color: var(--warn-red);
+            font-weight: 700;
+        }
+
+        .entropy-value.stable {
+            color: var(--divine-gold);
+        }
+
+        #start-screen, #game-over-screen, #win-screen {
+            position: absolute;
+            inset: 0;
+            background: rgba(5, 5, 5, 0.97);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+            z-index: 100;
+        }
+
+        #game-over-screen, #win-screen {
+            display: none;
+        }
+
+        .screen-title {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(2.5rem, 7vw, 5rem);
+            color: var(--math-cyan);
+            text-align: center;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 30px var(--math-cyan);
+            letter-spacing: 0.1em;
+        }
+
+        .screen-subtitle {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            text-align: center;
+            max-width: 550px;
+            line-height: 2;
+            margin-bottom: 2.5rem;
+            padding: 0 30px;
+        }
+
+        .game-btn {
+            background: transparent;
+            border: 2px solid var(--math-cyan);
+            color: var(--math-cyan);
+            padding: 18px 50px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--math-cyan);
+            transform: scaleX(0);
+            transform-origin: right;
+            transition: transform 0.4s ease;
+            z-index: -1;
+        }
+
+        .game-btn:hover, .game-btn:active {
+            color: var(--void);
+            box-shadow: 0 0 40px var(--math-cyan);
+        }
+
+        .game-btn:hover::before, .game-btn:active::before {
+            transform: scaleX(1);
+            transform-origin: left;
+        }
+
+        .controls-hint {
+            margin-top: 2.5rem;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 0.05em;
+        }
+
+        .controls-hint span {
+            color: var(--divine-gold);
+            padding: 3px 8px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 3px;
+            margin: 0 3px;
+        }
+
+        #game-over-screen .screen-title {
+            color: var(--warn-red);
+            text-shadow: 0 0 30px var(--warn-red);
+        }
+
+        #win-screen .screen-title {
+            color: var(--divine-gold);
+            text-shadow: 0 0 40px var(--divine-gold);
+        }
+
+        .win-message {
+            font-family: 'Cinzel', serif;
+            font-size: 20px;
+            color: var(--divine-gold);
+            text-align: center;
+            margin: 1.5rem 0;
+            letter-spacing: 0.15em;
+        }
+
+        .punchline {
+            font-size: 26px;
+            color: var(--math-cyan);
+            text-shadow: 2px 2px var(--warn-red), -1px -1px var(--purple-glow);
+            margin: 1.5rem 0 2rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+        }
+
+        .collected-symbols {
+            display: flex;
+            gap: 15px;
+            margin: 1rem 0;
+            font-size: 24px;
+            color: var(--divine-gold);
+        }
+
+        /* Mobile touch controls */
+        .touch-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            pointer-events: auto;
+        }
+
+        .d-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 50px);
+            grid-template-rows: repeat(3, 50px);
+            gap: 5px;
+        }
+
+        .d-btn {
+            background: rgba(0, 243, 255, 0.15);
+            border: 1px solid rgba(0, 243, 255, 0.4);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: var(--math-cyan);
+            user-select: none;
+        }
+
+        .d-btn:active {
+            background: rgba(0, 243, 255, 0.35);
+        }
+
+        .d-btn.up { grid-column: 2; grid-row: 1; }
+        .d-btn.left { grid-column: 1; grid-row: 2; }
+        .d-btn.right { grid-column: 3; grid-row: 2; }
+        .d-btn.down { grid-column: 2; grid-row: 3; }
+
+        @media (max-width: 768px) {
+            #game-container {
+                aspect-ratio: 3/4;
+                max-width: 100%;
+                height: 100vh;
             }
-          }
+            
+            .entropy-bar {
+                width: 150px;
+            }
 
-          // draw
-          if (b.type === 'shard') {
-            ctx.fillStyle = 'rgba(240,240,240,0.95)';
-            ctx.beginPath();
-            ctx.moveTo(b.x, b.y - b.r);
-            ctx.lineTo(b.x + b.r, b.y + b.r);
-            ctx.lineTo(b.x - b.r, b.y + b.r);
-            ctx.closePath();
-            ctx.fill();
-          } else {
-            ctx.fillStyle = 'white';
-            ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
-          }
+            .touch-controls {
+                display: block;
+            }
 
-          // collision
-          const dx = soul.x - b.x;
-          const dy = soul.y - b.y;
-          const rr = (b.r + 6);
-          if (dx*dx + dy*dy < rr*rr) {
-            // remove bullet on hit
-            bullets.splice(i, 1);
-            takeDamage();
-            continue;
-          }
-
-          // cleanup
-          if (b.y > H+20 || b.x < -30 || b.x > W+30) {
-            bullets.splice(i, 1);
-          }
+            .controls-hint {
+                display: none;
+            }
         }
+    </style>
+<base target="_blank">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        
+        <div id="ui-overlay">
+            <div class="hud-top">
+                <div class="score-display">
+                    <div>DIVINE CONSTANTS</div>
+                    <div class="score-value"><span id="score">0</span> / 7</div>
+                </div>
+                <div class="entropy-section">
+                    <div class="entropy-bar">
+                        <div class="entropy-fill" id="entropy-fill" style="width: 100%"></div>
+                    </div>
+                    <div class="entropy-label">ENTROPY: <span class="entropy-value" id="entropy-value">100</span>%</div>
+                </div>
+            </div>
+            
+            <div class="touch-controls" id="touch-controls">
+                <div class="d-pad">
+                    <div class="d-btn up" data-dir="up">▲</div>
+                    <div class="d-btn left" data-dir="left">◀</div>
+                    <div class="d-btn right" data-dir="right">▶</div>
+                    <div class="d-btn down" data-dir="down">▼</div>
+                </div>
+            </div>
+        </div>
 
-        // border
-        ctx.strokeStyle = 'white';
-        ctx.lineWidth = 4;
-        ctx.strokeRect(0,0,W,H);
+        <div id="start-screen">
+            <h1 class="screen-title">DIVINE EQUATION</h1>
+            <p class="screen-subtitle">
+                The Chaos Field has scattered the Divine Constants.<br>
+                Guide Divija through entropy to restore mathematical order.<br>
+                <br>
+                <span style="color: var(--divine-gold)">Collect all 7 symbols. Avoid the Corruption.</span>
+            </p>
+            <button class="game-btn" id="start-btn">INITIALIZE</button>
+            <p class="controls-hint">Move with <span>ARROWS</span> or <span>WASD</span></p>
+        </div>
 
-        frame++;
-        if (frame < maxFrames && Game.hp > 0) {
-          Game.loopId = requestAnimationFrame(loop);
-        } else {
-          endDodge();
+        <div id="game-over-screen">
+            <h1 class="screen-title">ENTROPY CONSUMED</h1>
+            <p class="screen-subtitle">The equation collapsed into chaos.</p>
+            <button class="game-btn" id="retry-btn">RETRY SEQUENCE</button>
+        </div>
+
+        <div id="win-screen">
+            <h1 class="screen-title">EQUATION STABILIZED</h1>
+            <div class="collected-symbols" id="collected-symbols"></div>
+            <p class="win-message">All Divine Constants Restored</p>
+            <p class="punchline">I will always be DADDY</p>
+            <button class="game-btn" id="play-again-btn">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <script>
+    /**
+     * DIVINE EQUATION - Final Draft
+     * Functional Programming Architecture
+     * Procedurally generated graphics (no external assets)
+     * Features: Screen shake, enhanced particles, touch controls, refined AI
+     */
+
+    // ===== FUNCTIONAL UTILITIES =====
+    const pipe = (...fns) => x => fns.reduce((v, f) => f(v), x);
+    const curry = fn => (...args) => args.length >= fn.length ? fn(...args) : curry(fn.bind(null, ...args));
+    const clamp = (min, max) => v => Math.min(Math.max(v, min), max);
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const dist = (x1, y1, x2, y2) => Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+    const random = (min, max) => Math.random() * (max - min) + min;
+    const randomInt = (min, max) => Math.floor(random(min, max + 1));
+    const normalize = (x, y) => {
+        const d = Math.sqrt(x * x + y * y);
+        return d > 0 ? { x: x / d, y: y / d } : { x: 0, y: 0 };
+    };
+    const easeOut = t => 1 - Math.pow(1 - t, 3);
+    const easeIn = t => t * t * t;
+
+    // ===== GAME CONFIGURATION =====
+    const CONFIG = {
+        player: {
+            speed: 6,
+            size: 18,
+            friction: 0.93,
+            acceleration: 1.0
+        },
+        collectibles: 7,
+        enemies: {
+            count: 6,
+            baseSpeed: 1.1,
+            maxSpeed: 3.8,
+            size: 14
+        },
+        particles: {
+            bgCount: 120,
+            effectCount: 40
+        },
+        shake: {
+            duration: 15,
+            intensity: 8
+        },
+        colors: {
+            player: '#00F3FF',
+            playerGlow: 'rgba(0, 243, 255, 0.5)',
+            collectible: '#FFD700',
+            collectibleGlow: 'rgba(255, 215, 0, 0.6)',
+            enemy: '#FF2A6D',
+            enemyGlow: 'rgba(255, 42, 109, 0.4)'
         }
-      }
+    };
 
-      if (Game.loopId) cancelAnimationFrame(Game.loopId);
-      Game.loopId = requestAnimationFrame(loop);
-    }
+    // ===== CANVAS SETUP =====
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d', { alpha: false });
+    
+    let width, height;
+    const resize = () => {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        width = canvas.width = rect.width;
+        height = canvas.height = rect.height;
+    };
+    resize();
+    window.addEventListener('resize', resize);
 
-    function takeDamage() {
-      const now = performance.now();
-      if (now < Game.invulnUntil) return; // invuln frames (fairness)
-
-      AudioSys.playSFX('hit');
-      Game.hp -= 2;
-      updateHUD();
-
-      Game.invulnUntil = now + 650;
-
-      // screen shake
-      UI.stage.classList.remove('shake');
-      void UI.stage.offsetWidth;
-      UI.stage.classList.add('shake');
-
-      if (Game.hp <= 0) {
-        cancelAnimationFrame(Game.loopId);
-        Game.state = 'gameover';
-        UI.bulletCanvas.style.display = 'none';
-        UI.mobileControls.style.display = 'none';
-        BGM.fadeOut(700);
-        AudioSys.playSFX('lose');
-
-        Typing.queue([
-          "* Your resolve shattered...",
-          "* But something inside you still whispers:",
-          "* \"Try again.\""
-        ], () => location.reload());
-      }
-    }
-
-    function endDodge() {
-      cancelAnimationFrame(Game.loopId);
-      UI.bulletCanvas.style.display = 'none';
-      UI.mobileControls.style.display = 'none';
-      AudioSys.playSFX('dodgeEnd');
-
-      if (Game.state === 'gameover') return;
-
-      // Echo visuals calm as progress increases
-      if (Game.enemyHp <= 60) {
-        UI.echo.classList.remove('echo-glitch');
-        UI.echo.classList.add('echo-calm');
-      }
-
-      maybePhaseTransitions(() => showMenu());
-    }
-
-    function winGame() {
-      Game.state = 'gameover';
-      UI.mainMenu.style.display = 'none';
-      UI.actMenu.style.display = 'none';
-
-      UI.echo.style.opacity = 0.55;
-      UI.echo.classList.remove('echo-glitch');
-      UI.echo.classList.add('echo-calm');
-
-      AudioSys.playSFX('win');
-      BGM.fadeOut(1200);
-
-      Typing.queue([
-        "* The Echo stops fighting.",
-        "ECHO: \"I thought if I hurt you first...\"",
-        "ECHO: \"...it would hurt less when the world did.\"",
-        "* You place your palm on the glass.",
-        "* The mirror does not feel cold anymore.",
-        "* It feels like a hand held from the other side.",
-        "ECHO: \"Can I stay?\"",
-        "* You answer without hesitation:",
-        "* \"Yes. But we learn a kinder language.\"",
-        "* The Echo steps forward.",
-        "* The reflection aligns with you.",
-        "* The cracks remain... but they look like light.",
-        "YOU WON.",
-        "* (Refresh to play again.)"
-      ]);
-    }
-
-    // ------------------ BG PARTICLES ------------------
-    (function bgAnim() {
-      const cvs = document.getElementById('bg-canvas');
-      const ctx = cvs.getContext('2d');
-
-      const parts = Array.from({length: 46}, () => ({
-        x: Math.random()*800,
-        y: Math.random()*600,
-        s: Math.random()*14 + 6,
-        v: Math.random()*0.55 + 0.12,
-        a: Math.random()*0.08 + 0.06
-      }));
-
-      function anim() {
-        ctx.clearRect(0,0,800,600);
-        parts.forEach(p => {
-          p.y -= p.v;
-          if (p.y < -30) { p.y = 630; p.x = Math.random()*800; }
-
-          ctx.fillStyle = `rgba(255,255,255,${p.a})`;
-          ctx.beginPath();
-          ctx.moveTo(p.x, p.y);
-          ctx.lineTo(p.x + p.s, p.y + p.s/2);
-          ctx.lineTo(p.x + p.s/2, p.y + p.s);
-          ctx.closePath();
-          ctx.fill();
+    // ===== SCREEN SHAKE SYSTEM =====
+    const ScreenShake = (() => {
+        let shakeAmount = 0;
+        let shakeDecay = 0;
+        
+        const trigger = (intensity = CONFIG.shake.intensity, duration = CONFIG.shake.duration) => {
+            shakeAmount = intensity;
+            shakeDecay = intensity / duration;
+        };
+        
+        const update = () => {
+            if (shakeAmount > 0) {
+                shakeAmount -= shakeDecay;
+                if (shakeAmount < 0) shakeAmount = 0;
+            }
+            return shakeAmount;
+        };
+        
+        const getOffset = () => ({
+            x: (Math.random() - 0.5) * shakeAmount * 2,
+            y: (Math.random() - 0.5) * shakeAmount * 2
         });
-        requestAnimationFrame(anim);
-      }
-      anim();
+        
+        return { trigger, update, getOffset };
     })();
 
-    // ------------------ INIT ------------------
-    BGM.init();
-    updateHUD();
-  </script>
+    // ===== INPUT HANDLING =====
+    const Input = (() => {
+        const keys = {};
+        const pressed = {};
+        
+        window.addEventListener('keydown', e => {
+            const key = e.key.toLowerCase();
+            if (!keys[key]) pressed[key] = true;
+            keys[key] = true;
+        });
+        
+        window.addEventListener('keyup', e => {
+            keys[e.key.toLowerCase()] = false;
+        });
+
+        // Touch controls
+        const touchBtns = document.querySelectorAll('.d-btn');
+        touchBtns.forEach(btn => {
+            const dir = btn.dataset.dir;
+            
+            const start = () => {
+                if (dir === 'up') keys['arrowup'] = true;
+                if (dir === 'down') keys['arrowdown'] = true;
+                if (dir === 'left') keys['arrowleft'] = true;
+                if (dir === 'right') keys['arrowright'] = true;
+            };
+            
+            const end = () => {
+                if (dir === 'up') keys['arrowup'] = false;
+                if (dir === 'down') keys['arrowdown'] = false;
+                if (dir === 'left') keys['arrowleft'] = false;
+                if (dir === 'right') keys['arrowright'] = false;
+            };
+            
+            btn.addEventListener('touchstart', e => { e.preventDefault(); start(); });
+            btn.addEventListener('touchend', e => { e.preventDefault(); end(); });
+            btn.addEventListener('mousedown', start);
+            btn.addEventListener('mouseup', end);
+            btn.addEventListener('mouseleave', end);
+        });
+        
+        return {
+            isDown: key => keys[key.toLowerCase()] || false,
+            wasPressed: key => {
+                const p = pressed[key.toLowerCase()];
+                pressed[key.toLowerCase()] = false;
+                return p;
+            },
+            getDirection: () => ({
+                x: (keys['arrowright'] || keys['d'] ? 1 : 0) - (keys['arrowleft'] || keys['a'] ? 1 : 0),
+                y: (keys['arrowdown'] || keys['s'] ? 1 : 0) - (keys['arrowup'] || keys['w'] ? 1 : 0)
+            })
+        };
+    })();
+
+    // ===== ENHANCED PARTICLE SYSTEMS =====
+    const createParticle = (x, y, type, angle = null) => {
+        const speed = type === 'collect' ? random(2, 5) : random(3, 7);
+        const dir = angle !== null ? angle : random(0, Math.PI * 2);
+        return {
+            x, y,
+            vx: Math.cos(dir) * speed,
+            vy: Math.sin(dir) * speed,
+            life: 1,
+            decay: random(0.015, 0.035),
+            size: random(2, 6),
+            type,
+            rotation: random(0, Math.PI * 2),
+            rotSpeed: random(-0.2, 0.2)
+        };
+    };
+
+    const EffectParticles = (() => {
+        let particles = [];
+        
+        const spawn = (x, y, count, type) => {
+            for (let i = 0; i < count; i++) {
+                const angle = (i / count) * Math.PI * 2;
+                particles.push(createParticle(x, y, type, type === 'collect' ? angle : null));
+            }
+        };
+        
+        const spawnBurst = (x, y, count, type) => {
+            for (let i = 0; i < count; i++) {
+                particles.push(createParticle(x, y, type));
+            }
+        };
+        
+        const update = () => {
+            particles = particles.filter(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= p.decay;
+                p.vx *= 0.96;
+                p.vy *= 0.96;
+                p.rotation += p.rotSpeed;
+                return p.life > 0;
+            });
+        };
+        
+        const draw = () => {
+            particles.forEach(p => {
+                const alpha = easeOut(p.life);
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rotation);
+                
+                if (p.type === 'collect') {
+                    ctx.fillStyle = CONFIG.colors.collectible;
+                    ctx.globalAlpha = alpha;
+                    ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+                } else {
+                    ctx.fillStyle = CONFIG.colors.enemy;
+                    ctx.globalAlpha = alpha;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.size/2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                ctx.restore();
+            });
+            ctx.globalAlpha = 1;
+        };
+        
+        return { spawn, spawnBurst, update, draw };
+    })();
+
+    const BackgroundParticles = (() => {
+        const particles = Array.from({ length: CONFIG.particles.bgCount }, () => ({
+            x: random(0, 1000),
+            y: random(0, 1000),
+            vx: random(-0.4, 0.4),
+            vy: random(-0.4, 0.4),
+            size: random(1, 4),
+            alpha: random(0.2, 0.9),
+            pulse: random(0, Math.PI * 2)
+        }));
+
+        const update = (entropy, time) => {
+            const speedMult = 1 + entropy * 2.5;
+            particles.forEach(p => {
+                p.x += p.vx * speedMult;
+                p.y += p.vy * speedMult;
+                p.pulse += 0.05;
+                
+                if (p.x < 0) p.x = 1000;
+                if (p.x > 1000) p.x = 0;
+                if (p.y < 0) p.y = 1000;
+                if (p.y > 1000) p.y = 0;
+            });
+        };
+
+        const draw = (entropy, time) => {
+            const color = entropy > 0.5 ? '#FF2A6D' : '#00F3FF';
+            particles.forEach(p => {
+                const screenX = (p.x / 1000) * width;
+                const screenY = (p.y / 1000) * height;
+                const pulseAlpha = p.alpha * (0.5 + Math.sin(p.pulse) * 0.3);
+                ctx.fillStyle = color;
+                ctx.globalAlpha = pulseAlpha * (0.3 + entropy * 0.5);
+                ctx.fillRect(screenX, screenY, p.size, p.size);
+            });
+            ctx.globalAlpha = 1;
+        };
+
+        return { update, draw };
+    })();
+
+    // ===== PLAYER =====
+    const createPlayer = () => ({
+        x: width / 2,
+        y: height / 2,
+        vx: 0,
+        vy: 0,
+        trail: [],
+        pulse: 0,
+        invulnerable: 0
+    });
+
+    const updatePlayer = player => {
+        const dir = Input.getDirection();
+        
+        // Acceleration with diagonal normalization
+        if (dir.x !== 0 || dir.y !== 0) {
+            const n = normalize(dir.x, dir.y);
+            player.vx += n.x * CONFIG.player.acceleration;
+            player.vy += n.y * CONFIG.player.acceleration;
+        }
+        
+        // Friction
+        player.vx *= CONFIG.player.friction;
+        player.vy *= CONFIG.player.friction;
+        
+        // Update position
+        player.x += player.vx;
+        player.y += player.vy;
+        
+        // Clamp to bounds
+        player.x = clamp(CONFIG.player.size, width - CONFIG.player.size)(player.x);
+        player.y = clamp(CONFIG.player.size, height - CONFIG.player.size)(player.y);
+        
+        // Enhanced trail
+        const speed = Math.sqrt(player.vx ** 2 + player.vy ** 2);
+        if (speed > 0.3) {
+            player.trail.push({ 
+                x: player.x, 
+                y: player.y, 
+                age: 0,
+                size: 3 + speed * 0.5
+            });
+        }
+        player.trail = player.trail.filter(t => {
+            t.age++;
+            return t.age < 25;
+        });
+        
+        // Pulse animation
+        player.pulse += 0.12;
+        
+        // Invulnerability countdown
+        if (player.invulnerable > 0) player.invulnerable--;
+        
+        return player;
+    };
+
+    const drawPlayer = player => {
+        const pulseSize = 1 + Math.sin(player.pulse) * 0.12;
+        const invulnerableAlpha = player.invulnerable > 0 ? 0.5 + Math.sin(player.pulse * 2) * 0.3 : 1;
+        
+        // Trail with gradient
+        player.trail.forEach((t, i) => {
+            const progress = i / player.trail.length;
+            const alpha = progress * 0.5 * invulnerableAlpha;
+            const size = t.size * progress;
+            ctx.fillStyle = CONFIG.colors.player;
+            ctx.globalAlpha = alpha;
+            ctx.fillRect(t.x - size/2, t.y - size/2, size, size);
+        });
+        ctx.globalAlpha = 1;
+        
+        ctx.save();
+        ctx.globalAlpha = invulnerableAlpha;
+        
+        // Outer glow rings
+        ctx.shadowBlur = 30 * pulseSize;
+        ctx.shadowColor = CONFIG.colors.playerGlow;
+        
+        // Outer ring
+        ctx.strokeStyle = CONFIG.colors.player;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, CONFIG.player.size * pulseSize, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Inner glow
+        ctx.fillStyle = CONFIG.colors.player;
+        const s = CONFIG.player.size * 0.6 * pulseSize;
+        ctx.fillRect(player.x - s/2, player.y - s/2, s, s);
+        
+        // Core
+        ctx.fillStyle = '#fff';
+        ctx.shadowBlur = 15;
+        ctx.fillRect(player.x - 3, player.y - 3, 6, 6);
+        
+        ctx.restore();
+        ctx.shadowBlur = 0;
+    };
+
+    // ===== COLLECTIBLES =====
+    const symbols = ['∞', 'π', '∑', '∫', 'φ', '√', '∆'];
+    
+    const createCollectible = (index, player) => {
+        let x, y, d;
+        let attempts = 0;
+        do {
+            x = random(70, width - 70);
+            y = random(70, height - 70);
+            d = dist(x, y, player.x, player.y);
+            attempts++;
+        } while (d < 200 && attempts < 60);
+        
+        return {
+            x, y,
+            symbol: symbols[index % symbols.length],
+            size: 24,
+            collected: false,
+            pulse: 0,
+            rotation: random(0, Math.PI * 2),
+            spawnScale: 0
+        };
+    };
+
+    const updateCollectible = (c, time) => {
+        c.pulse = Math.sin(time * 0.0025) * 0.2 + 0.8;
+        c.rotation += 0.008;
+        if (c.spawnScale < 1) c.spawnScale += 0.05;
+        return c;
+    };
+
+    const drawCollectible = c => {
+        if (c.collected) return;
+        
+        const scale = c.spawnScale;
+        const glowSize = 40 * c.pulse * scale;
+        ctx.shadowBlur = glowSize;
+        ctx.shadowColor = CONFIG.colors.collectibleGlow;
+        
+        // Outer ring
+        ctx.strokeStyle = CONFIG.colors.collectible;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, c.size * c.pulse * scale, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Inner ring (rotating, dashed)
+        ctx.save();
+        ctx.translate(c.x, c.y);
+        ctx.rotate(-c.rotation);
+        ctx.strokeStyle = 'rgba(255, 215, 0, 0.6)';
+        ctx.setLineDash([8, 6]);
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, c.size * 0.65 * scale, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+        
+        // Inner glow circle
+        ctx.fillStyle = 'rgba(255, 215, 0, 0.15)';
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, c.size * 0.5 * scale, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Symbol
+        ctx.fillStyle = CONFIG.colors.collectible;
+        ctx.font = `bold ${20 * c.pulse * scale}px "JetBrains Mono"`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(c.symbol, c.x, c.y);
+        
+        ctx.shadowBlur = 0;
+    };
+
+    // ===== ENEMIES =====
+    const createEnemy = (player, index) => {
+        let x, y, d;
+        let attempts = 0;
+        do {
+            // Spawn from edges
+            if (Math.random() < 0.5) {
+                x = Math.random() < 0.5 ? -30 : width + 30;
+                y = random(0, height);
+            } else {
+                x = random(0, width);
+                y = Math.random() < 0.5 ? -30 : height + 30;
+            }
+            d = dist(x, y, player.x, player.y);
+            attempts++;
+        } while (d < 300 && attempts < 30);
+        
+        return {
+            x, y,
+            vx: random(-0.5, 0.5),
+            vy: random(-0.5, 0.5),
+            size: CONFIG.enemies.size,
+            angle: random(0, Math.PI * 2),
+            spin: random(-0.04, 0.04),
+            id: index,
+            pulse: random(0, Math.PI * 2)
+        };
+    };
+
+    const updateEnemy = (enemy, player, entropy, time) => {
+        const speed = lerp(CONFIG.enemies.baseSpeed, CONFIG.enemies.maxSpeed, entropy);
+        const dx = player.x - enemy.x;
+        const dy = player.y - enemy.y;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        
+        // Predictive chase - aim slightly ahead of player
+        const predictFactor = 0.15 * entropy;
+        const targetX = player.x + player.vx * 5 * predictFactor;
+        const targetY = player.y + player.vy * 5 * predictFactor;
+        const pdx = targetX - enemy.x;
+        const pdy = targetY - enemy.y;
+        const pd = Math.sqrt(pdx * pdx + pdy * pdy);
+        
+        if (pd > 0) {
+            const chaseStrength = 0.06 + entropy * 0.04;
+            enemy.vx += (pdx / pd) * chaseStrength;
+            enemy.vy += (pdy / pd) * chaseStrength;
+        }
+        
+        // Erratic movement at high entropy
+        if (entropy > 0.5) {
+            enemy.vx += random(-0.25, 0.25) * entropy;
+            enemy.vy += random(-0.25, 0.25) * entropy;
+        }
+        
+        // Limit speed
+        const v = Math.sqrt(enemy.vx ** 2 + enemy.vy ** 2);
+        if (v > speed) {
+            enemy.vx = (enemy.vx / v) * speed;
+            enemy.vy = (enemy.vy / v) * speed;
+        }
+        
+        enemy.x += enemy.vx;
+        enemy.y += enemy.vy;
+        enemy.angle += enemy.spin * (1 + entropy * 0.5);
+        enemy.pulse += 0.1;
+        
+        // Wrap around instead of bounce
+        const margin = 50;
+        if (enemy.x < -margin) enemy.x = width + margin;
+        if (enemy.x > width + margin) enemy.x = -margin;
+        if (enemy.y < -margin) enemy.y = height + margin;
+        if (enemy.y > height + margin) enemy.y = -margin;
+        
+        return enemy;
+    };
+
+    const drawEnemy = (enemy, entropy, time) => {
+        ctx.save();
+        ctx.translate(enemy.x, enemy.y);
+        ctx.rotate(enemy.angle);
+        
+        const intensity = 0.5 + entropy * 0.5;
+        const pulse = 1 + Math.sin(enemy.pulse) * 0.15;
+        const s = enemy.size * pulse;
+        
+        ctx.shadowBlur = 25 * intensity;
+        ctx.shadowColor = CONFIG.colors.enemyGlow;
+        
+        // X shape with glow
+        ctx.fillStyle = CONFIG.colors.enemy;
+        ctx.fillRect(-s/2, -2.5, s, 5);
+        ctx.fillRect(-2.5, -s/2, 5, s);
+        
+        // Rotating inner elements
+        ctx.rotate(time * 0.002);
+        ctx.fillStyle = 'rgba(255, 42, 109, 0.6)';
+        ctx.fillRect(-s/3, -2, s/1.5, 4);
+        ctx.fillRect(-2, -s/3, 4, s/1.5);
+        
+        // Center core
+        ctx.fillStyle = '#fff';
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.arc(0, 0, 3, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.restore();
+        ctx.shadowBlur = 0;
+    };
+
+    // ===== GAME STATE =====
+    let gameState = 'start';
+    let player = createPlayer();
+    let collectibles = [];
+    let enemies = [];
+    let score = 0;
+    let entropy = 1.0;
+    let collectedSymbols = [];
+    let gameTime = 0;
+
+    // ===== UI UPDATES =====
+    const updateUI = () => {
+        document.getElementById('score').textContent = score;
+        
+        const entropyPercent = Math.round(entropy * 100);
+        document.getElementById('entropy-fill').style.width = `${entropyPercent}%`;
+        document.getElementById('entropy-value').textContent = entropyPercent;
+        
+        const entropyEl = document.getElementById('entropy-fill');
+        const entropyValue = document.getElementById('entropy-value');
+        
+        if (entropy < 0.3) {
+            entropyEl.classList.add('low');
+            entropyValue.classList.add('stable');
+        } else {
+            entropyEl.classList.remove('low');
+            entropyValue.classList.remove('stable');
+        }
+    };
+
+    // ===== GAME LOOP =====
+    const gameLoop = time => {
+        if (gameState !== 'playing') return;
+        
+        gameTime = time;
+        
+        // Apply screen shake
+        const shakeAmount = ScreenShake.update();
+        const shakeOffset = ScreenShake.getOffset();
+        
+        // Clear
+        ctx.fillStyle = '#050505';
+        ctx.fillRect(0, 0, width, height);
+        
+        ctx.save();
+        ctx.translate(shakeOffset.x, shakeOffset.y);
+        
+        // Calculate entropy
+        entropy = Math.max(0.05, 1.0 - (score / CONFIG.collectibles) * 0.95);
+        
+        // Background
+        BackgroundParticles.update(entropy, time);
+        BackgroundParticles.draw(entropy, time);
+        
+        // Update and draw collectibles
+        collectibles.forEach(c => {
+            updateCollectible(c, time);
+            drawCollectible(c);
+            
+            if (!c.collected && dist(player.x, player.y, c.x, c.y) < CONFIG.player.size + c.size - 3) {
+                c.collected = true;
+                score++;
+                collectedSymbols.push(c.symbol);
+                EffectParticles.spawn(c.x, c.y, 20, 'collect');
+                EffectParticles.spawnBurst(c.x, c.y, 8, 'collect');
+                updateUI();
+                
+                if (score >= CONFIG.collectibles) {
+                    gameState = 'win';
+                    document.getElementById('collected-symbols').textContent = collectedSymbols.join(' ');
+                    document.getElementById('win-screen').style.display = 'flex';
+                    document.getElementById('touch-controls').style.display = 'none';
+                }
+            }
+        });
+        
+        // Update and draw enemies
+        enemies.forEach(e => {
+            updateEnemy(e, player, entropy, time);
+            drawEnemy(e, entropy, time);
+            
+            const collisionDist = CONFIG.player.size/2 + e.size/2 + 2;
+            if (player.invulnerable === 0 && dist(player.x, player.y, e.x, e.y) < collisionDist) {
+                ScreenShake.trigger();
+                EffectParticles.spawnBurst(player.x, player.y, 30, 'enemy');
+                player.invulnerable = 30;
+                
+                // Brief delay before game over for impact
+                setTimeout(() => {
+                    if (gameState === 'playing') {
+                        gameState = 'gameover';
+                        document.getElementById('game-over-screen').style.display = 'flex';
+                        document.getElementById('touch-controls').style.display = 'none';
+                    }
+                }, 200);
+            }
+        });
+        
+        // Effect particles
+        EffectParticles.update();
+        EffectParticles.draw();
+        
+        // Player
+        player = updatePlayer(player);
+        drawPlayer(player);
+        
+        ctx.restore();
+        
+        requestAnimationFrame(gameLoop);
+    };
+
+    // ===== GAME CONTROL =====
+    const startGame = () => {
+        player = createPlayer();
+        score = 0;
+        entropy = 1.0;
+        collectedSymbols = [];
+        gameTime = 0;
+        ScreenShake.trigger(0, 0); // Reset shake
+        
+        collectibles = Array.from({ length: CONFIG.collectibles }, (_, i) => 
+            createCollectible(i, player)
+        );
+        
+        enemies = Array.from({ length: CONFIG.enemies.count }, (_, i) => 
+            createEnemy(player, i)
+        );
+        
+        gameState = 'playing';
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('game-over-screen').style.display = 'none';
+        document.getElementById('win-screen').style.display = 'none';
+        
+        // Show touch controls on mobile
+        if (window.innerWidth <= 768) {
+            document.getElementById('touch-controls').style.display = 'block';
+        }
+        
+        updateUI();
+        requestAnimationFrame(gameLoop);
+    };
+
+    // ===== EVENTS =====
+    document.getElementById('start-btn').addEventListener('click', startGame);
+    document.getElementById('retry-btn').addEventListener('click', startGame);
+    document.getElementById('play-again-btn').addEventListener('click', startGame);
+    </script>
 </body>
 </html>
