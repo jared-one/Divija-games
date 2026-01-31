@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Divija: The Calculus of the Heart</title>
+    <title>Divija: The Calculus of the Heart [Deluxe]</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>❤️</text></svg>">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=VT323&family=Cinzel:wght@700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=VT323&family=Cinzel:wght@700&family=Press+Start+2P&display=swap');
 
         :root {
             --bg: #050505;
             --heart: #ff4d4d;
             --soul: #00f3ff;
             --gold: #ffd700;
+            --void: #1a1a1a;
             --text-shadow: 2px 2px 0px #000;
         }
 
@@ -29,160 +30,102 @@
             user-select: none;
         }
 
-        /* CRT MONITOR CONTAINER */
+        /* --- CRT CONTAINER --- */
         #game-container {
             position: relative;
             width: 800px;
             height: 600px;
             background: #000;
-            border: 1px solid #333;
-            box-shadow: 0 0 100px rgba(0, 243, 255, 0.1);
+            border: 4px solid #333;
+            box-shadow: 0 0 50px rgba(0, 243, 255, 0.1);
             overflow: hidden;
+            border-radius: 10px;
         }
 
-        canvas {
-            display: block;
-            image-rendering: pixelated; /* Crucial for retro look */
-        }
+        canvas { display: block; image-rendering: pixelated; }
 
-        /* UI OVERLAY */
+        /* --- UI LAYERS --- */
         #ui-layer {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 20px;
-            box-sizing: border-box;
-            z-index: 10;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; display: flex; flex-direction: column;
+            justify-content: space-between; padding: 20px; box-sizing: border-box; z-index: 20;
+            opacity: 0; transition: opacity 1s;
         }
 
         .hud-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 24px;
-            text-shadow: var(--text-shadow);
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 24px; text-shadow: var(--text-shadow);
         }
 
         .bar-container {
-            width: 200px;
-            height: 20px;
-            background: #333;
-            border: 2px solid white;
-            margin-left: 10px;
-            position: relative;
+            width: 200px; height: 20px; background: #333;
+            border: 2px solid white; margin-left: 10px; position: relative;
         }
-
-        .bar-fill {
-            height: 100%;
-            transition: width 0.1s linear;
-        }
-
-        #hp-fill { background: var(--gold); }
+        .bar-fill { height: 100%; transition: width 0.1s linear; }
+        #hp-fill { background: var(--heart); }
         #tp-fill { background: var(--soul); width: 0%; }
 
-        /* DIALOGUE BOX */
+        /* --- DIALOGUE --- */
         #dialogue-box {
-            position: absolute;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 90%;
-            height: 150px;
-            background: #000;
-            border: 4px solid white;
-            padding: 20px;
-            display: none; /* Hidden by default */
-            box-sizing: border-box;
-            font-size: 28px;
-            line-height: 1.2;
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            width: 90%; height: 160px; background: #000; border: 4px solid white;
+            padding: 20px; display: none; box-sizing: border-box; font-size: 28px; line-height: 1.2;
+            z-index: 30;
         }
-
         .face-portrait {
-            float: left;
-            width: 100px;
-            height: 100px;
-            margin-right: 20px;
-            border: 2px solid white;
-            background: #000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 50px;
+            float: left; width: 100px; height: 100px; margin-right: 20px;
+            border: 2px solid white; background: #000; display: flex;
+            justify-content: center; align-items: center; font-size: 50px;
         }
 
-        .next-arrow {
-            position: absolute;
-            bottom: 10px;
-            right: 20px;
-            animation: bounce 0.5s infinite alternate;
-        }
-
-        /* SCREENS */
+        /* --- SCREENS --- */
         .screen {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 20;
-            pointer-events: auto;
-            transition: opacity 0.5s;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,1); display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 50;
+            transition: opacity 1s;
         }
-
         .hidden { opacity: 0; pointer-events: none; }
 
         h1 {
-            font-family: 'Cinzel', serif;
-            font-size: 60px;
-            color: var(--soul);
-            margin: 0;
-            text-shadow: 0 0 20px var(--soul);
+            font-family: 'Cinzel', serif; font-size: 60px; color: var(--soul);
+            margin: 0; text-shadow: 0 0 20px var(--soul); letter-spacing: 5px;
         }
 
         button {
-            background: transparent;
-            color: white;
-            font-family: 'VT323', monospace;
-            font-size: 30px;
-            border: 2px solid white;
-            padding: 10px 40px;
-            margin-top: 40px;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-transform: uppercase;
+            background: transparent; color: white; font-family: 'VT323', monospace;
+            font-size: 30px; border: 2px solid white; padding: 10px 40px; margin-top: 40px;
+            cursor: pointer; transition: all 0.2s; text-transform: uppercase;
+        }
+        button:hover { background: white; color: black; transform: scale(1.1); box-shadow: 0 0 20px white; }
+
+        /* --- CINEMATIC INTRO STYLES --- */
+        #cinematic-layer {
+            background: #000; z-index: 40; text-align: center;
+        }
+        .scene-element { font-size: 100px; transition: all 2s; position: absolute; }
+        .fade-in { opacity: 1; }
+        .fade-out { opacity: 0; }
+        
+        #story-text {
+            position: absolute; bottom: 100px; width: 100%; text-align: center;
+            font-size: 32px; color: #ddd; font-family: 'Cinzel', serif;
         }
 
-        button:hover {
-            background: white;
-            color: black;
-            transform: scale(1.1);
-            box-shadow: 0 0 20px white;
-        }
-
-        .controls {
-            margin-top: 30px;
-            color: #888;
-            text-align: center;
-            font-size: 20px;
-        }
-
-        .key { color: var(--gold); border: 1px solid #555; padding: 2px 6px; border-radius: 4px; }
-
-        /* CRT EFFECTS */
+        /* --- CRT FX --- */
         .scanlines {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            background-size: 100% 2px, 3px 100%;
-            pointer-events: none;
-            z-index: 50;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 6px 100%; pointer-events: none; z-index: 100;
         }
-
-        @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(5px); } }
+        .flicker { animation: flicker 0.15s infinite; pointer-events: none; opacity: 0.1; position: absolute; width: 100%; height: 100%; background:white; z-index: 99;}
+        
+        @keyframes flicker { 0% { opacity: 0.02; } 50% { opacity: 0.05; } 100% { opacity: 0.02; } }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+        
+        .controls { margin-top: 20px; color: #666; font-size: 18px; }
+        .key { color: var(--gold); border: 1px solid #555; padding: 0 4px; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -190,12 +133,13 @@
 <div id="game-container">
     <canvas id="gameCanvas"></canvas>
     <div class="scanlines"></div>
+    <div class="flicker"></div>
 
     <!-- UI -->
     <div id="ui-layer">
         <div class="hud-row">
             <div style="display:flex; align-items:center;">
-                <span>DIVIJA</span>
+                <span style="color:var(--heart)">DIVIJA</span>
                 <span style="font-size:18px; color:#888; margin-left:10px;">LV 25</span>
                 <div class="bar-container">
                     <div class="bar-fill" id="hp-fill"></div>
@@ -203,7 +147,7 @@
                 <span id="hp-text" style="margin-left:10px">20/20</span>
             </div>
             <div style="display:flex; align-items:center;">
-                <span style="color:var(--soul)">TP</span>
+                <span style="color:var(--soul)">BOMB</span>
                 <div class="bar-container" style="width:100px; border-color:var(--soul)">
                     <div class="bar-fill" id="tp-fill"></div>
                 </div>
@@ -214,27 +158,34 @@
         <div id="dialogue-box">
             <div class="face-portrait" id="face-icon">♥</div>
             <div id="dialogue-text"></div>
-            <div class="next-arrow">▼</div>
+            <div style="position:absolute; bottom:10px; right:20px; font-size:16px; color:#666;">[Z] NEXT</div>
         </div>
     </div>
 
     <!-- TITLE SCREEN -->
     <div id="title-screen" class="screen">
-        <h1>THE CALCULUS<br>OF THE HEART</h1>
-        <div style="color: #666; margin-top: 10px;">v.2.0.1 // STABLE BUILD</div>
+        <h1 style="font-size:70px">DIVIJA</h1>
+        <div style="font-size:24px; letter-spacing:8px; margin-bottom:20px; color:#888;">CALCULUS OF THE HEART</div>
+        <button id="btn-start">BEGIN SIMULATION</button>
         <div class="controls">
-            <span class="key">ARROWS</span> Move &nbsp; 
-            <span class="key">SHIFT</span> Focus &nbsp; 
-            <span class="key">Z</span> Interact &nbsp; 
-            <span class="key">X</span> Overload (Bomb)
+            <p>ARROWS to Move • SHIFT to Focus</p>
+            <p>Z to Shoot/Talk • X to Bomb</p>
         </div>
-        <button id="btn-start">Initiate</button>
+    </div>
+
+    <!-- CINEMATIC LAYER -->
+    <div id="cinematic-layer" class="screen hidden">
+        <div id="scene-container" style="position:relative; width:100%; height:100%;">
+            <!-- Elements injected by JS -->
+        </div>
+        <div id="story-text"></div>
+        <button id="skip-btn" style="position:absolute; bottom:20px; right:20px; font-size:16px; padding:5px 10px; margin:0;">Skip >></button>
     </div>
 
     <!-- GAME OVER -->
     <div id="game-over" class="screen hidden">
         <h1 style="color: var(--heart)">HEART BROKEN</h1>
-        <p style="font-size: 24px;">But you are too stubborn to quit.</p>
+        <p style="font-size: 24px;">Divija does not give up.</p>
         <button id="btn-retry">Refuse to Die</button>
     </div>
 
@@ -242,44 +193,58 @@
     <div id="victory-screen" class="screen hidden">
         <h1 style="color: var(--gold)">PROOF COMPLETE</h1>
         <div style="text-align: center; max-width: 600px; font-size: 24px; line-height: 1.5;">
-            <p>From the undefined variables, we derived a constant.</p>
-            <p>Happy Birthday, Divija.</p>
+            <p>The variable 'Divija' has withstood the Chaos.</p>
+            <p>You are stronger than the system.</p>
             <p style="margin-top: 30px; color: var(--soul); font-size: 32px;">
-                I will always be DADDY 👑
+                Happy Birthday.<br>Love, Daddy. 👑
             </p>
         </div>
-        <button onclick="location.reload()">Re-Run Simulation</button>
+        <button onclick="location.reload()">Reset World</button>
     </div>
 </div>
 
 <script>
 /**
- * ENGINE: HEART_CORE
- * A robust, canvas-based bullet hell engine with visual novel elements.
+ * ENGINE: HEART_CORE_V3
+ * Advanced Bullet Hell Engine + Cinematic Sequencer
  */
 
 const CONFIG = {
-    w: 800,
-    h: 600,
-    fps: 60,
-    colors: {
-        bg: '#050505',
-        arena: '#FFF',
-        heart: '#ff4d4d',
-        soul: '#00f3ff',
-        bullet: '#FFF',
-        warn: '#FF0000'
-    }
+    w: 800, h: 600,
+    colors: { bg: '#050505', heart: '#ff4d4d', soul: '#00f3ff', bullet: '#FFF', warn: '#FF0000', gold: '#ffd700' }
 };
 
-// --- AUDIO SYNTHESIZER (No external files needed) ---
-const Synth = {
+// --- AUDIO MANAGER ---
+const AudioMan = {
+    bgm: null,
     ctx: null,
     init() {
-        window.AudioContext = window.AudioContext || window.webkitAudioContext;
-        this.ctx = new AudioContext();
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        // Try to load the MP3
+        this.bgm = new Audio('fallen-down.mp3');
+        this.bgm.loop = true;
+        this.bgm.volume = 0.5;
     },
-    play(type) {
+    playBGM() {
+        if(this.bgm) this.bgm.play().catch(e => console.log("Audio play blocked until interaction"));
+    },
+    stopBGM() {
+        if(this.bgm) {
+            // Fade out effect
+            let vol = 0.5;
+            const fade = setInterval(() => {
+                vol -= 0.05;
+                if(vol <= 0) {
+                    this.bgm.pause();
+                    this.bgm.currentTime = 0;
+                    clearInterval(fade);
+                } else {
+                    this.bgm.volume = vol;
+                }
+            }, 100);
+        }
+    },
+    sfx(type) {
         if (!this.ctx) return;
         const t = this.ctx.currentTime;
         const osc = this.ctx.createOscillator();
@@ -287,52 +252,51 @@ const Synth = {
         osc.connect(gain);
         gain.connect(this.ctx.destination);
 
-        if (type === 'blip') {
-            osc.type = 'square';
-            osc.frequency.setValueAtTime(800, t);
-            gain.gain.setValueAtTime(0.1, t);
-            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
-            osc.start(t);
-            osc.stop(t + 0.05);
-        } else if (type === 'hurt') {
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(200, t);
-            osc.frequency.linearRampToValueAtTime(50, t + 0.3);
-            gain.gain.setValueAtTime(0.2, t);
-            gain.gain.linearRampToValueAtTime(0, t + 0.3);
-            osc.start(t);
-            osc.stop(t + 0.3);
-        } else if (type === 'graze') {
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(2000, t);
+        if (type === 'shoot') {
+            osc.frequency.setValueAtTime(400, t);
             gain.gain.setValueAtTime(0.05, t);
             gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
-            osc.start(t);
-            osc.stop(t + 0.1);
+            osc.start(t); osc.stop(t + 0.1);
+        } else if (type === 'hit') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, t);
+            osc.frequency.linearRampToValueAtTime(50, t + 0.2);
+            gain.gain.setValueAtTime(0.2, t);
+            gain.gain.linearRampToValueAtTime(0, t + 0.2);
+            osc.start(t); osc.stop(t + 0.2);
+        } else if (type === 'graze') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(1200, t);
+            gain.gain.setValueAtTime(0.05, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+            osc.start(t); osc.stop(t + 0.1);
         } else if (type === 'bomb') {
             osc.type = 'square';
             osc.frequency.setValueAtTime(100, t);
-            osc.frequency.linearRampToValueAtTime(800, t + 1.0);
-            gain.gain.setValueAtTime(0.2, t);
-            gain.gain.linearRampToValueAtTime(0, t + 1.0);
-            osc.start(t);
-            osc.stop(t + 1.0);
+            osc.frequency.linearRampToValueAtTime(1000, t + 1);
+            gain.gain.setValueAtTime(0.3, t);
+            gain.gain.linearRampToValueAtTime(0, t + 1);
+            osc.start(t); osc.stop(t + 1);
+        } else if (type === 'text') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(600, t);
+            gain.gain.setValueAtTime(0.05, t);
+            gain.gain.linearRampToValueAtTime(0, t + 0.03);
+            osc.start(t); osc.stop(t + 0.03);
         }
     }
 };
 
-// --- INPUT HANDLER ---
+// --- INPUT ---
 const Input = {
     keys: {},
     init() {
         window.addEventListener('keydown', e => {
             if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
-            this.keys[e.key.toLowerCase()] = true;
-            this.keys[e.code] = true;
+            this.keys[e.key.toLowerCase()] = true; this.keys[e.code] = true;
         });
         window.addEventListener('keyup', e => {
-            this.keys[e.key.toLowerCase()] = false;
-            this.keys[e.code] = false;
+            this.keys[e.key.toLowerCase()] = false; this.keys[e.code] = false;
         });
     },
     isDown(action) {
@@ -347,110 +311,171 @@ const Input = {
     }
 };
 
+// --- CINEMATIC ENGINE ---
+const Cinematic = {
+    step: 0,
+    container: document.getElementById('scene-container'),
+    text: document.getElementById('story-text'),
+    timer: null,
+    
+    start(onComplete) {
+        const layer = document.getElementById('cinematic-layer');
+        layer.classList.remove('hidden');
+        this.step = 0;
+        this.onComplete = onComplete;
+        
+        // Skip button
+        document.getElementById('skip-btn').onclick = () => {
+            clearTimeout(this.timer);
+            this.end();
+        };
+
+        this.playScene();
+    },
+
+    playScene() {
+        this.container.innerHTML = ''; // Clear previous
+        
+        const sequences = [
+            {
+                // Scene 1: Home
+                duration: 4000,
+                html: `<div class="scene-element" style="top:40%; left:45%; font-size:150px;">🏠</div>
+                       <div class="scene-element" style="top:20%; left:20%; animation:float 3s infinite;">🌧️</div>
+                       <div class="scene-element" style="top:25%; left:70%; animation:float 4s infinite;">🌧️</div>`,
+                text: "It was a quiet Tuesday..."
+            },
+            {
+                // Scene 2: Forest
+                duration: 4000,
+                html: `<div class="scene-element" style="top:40%; left:20%; font-size:120px;">🌲</div>
+                       <div class="scene-element" style="top:35%; left:60%; font-size:140px;">🌲</div>
+                       <div class="scene-element" style="top:50%; left:40%; font-size:50px;">🧍‍♀️</div>`,
+                text: "You wandered where the code breaks."
+            },
+            {
+                // Scene 3: Glitch
+                duration: 4000,
+                html: `<div class="scene-element" style="top:40%; left:45%; font-size:150px; color:cyan; text-shadow:2px 2px red;">👁️</div>
+                       <div class="scene-element" style="top:50%; left:40%; font-size:50px; opacity:0.5;">🧍‍♀️</div>`,
+                text: "The System found you."
+            }
+        ];
+
+        if (this.step < sequences.length) {
+            const seq = sequences[this.step];
+            this.container.innerHTML = seq.html;
+            this.text.innerText = seq.text;
+            this.text.style.opacity = 0;
+            
+            // Fade text in
+            setTimeout(() => this.text.style.opacity = 1, 500);
+
+            this.timer = setTimeout(() => {
+                this.step++;
+                this.playScene();
+            }, seq.duration);
+        } else {
+            this.end();
+        }
+    },
+
+    end() {
+        document.getElementById('cinematic-layer').classList.add('hidden');
+        AudioMan.stopBGM(); // Stop the sad song
+        if(this.onComplete) this.onComplete();
+    }
+};
+
 // --- GAME ENTITIES ---
 class Player {
     constructor() {
-        this.x = CONFIG.w / 2;
-        this.y = CONFIG.h / 2;
-        this.r = 4; // Hitbox radius
-        this.spriteR = 10; // Visual radius
-        this.speed = 5;
-        this.focusSpeed = 2.5;
-        this.hp = 20;
-        this.maxHp = 20;
-        this.tp = 0; // Tension Points (0-100)
+        this.x = CONFIG.w / 2; this.y = CONFIG.h - 100;
+        this.r = 3; // Soul Hitbox
+        this.spriteR = 12; // Visual
+        this.speed = 5; this.focusSpeed = 2;
+        this.hp = 20; this.maxHp = 20;
+        this.tp = 0; // Tech Points (Bomb meter)
         this.invuln = 0;
     }
 
     update(arena) {
         const spd = Input.isDown('focus') ? this.focusSpeed : this.speed;
-        
         if (Input.isDown('left')) this.x -= spd;
         if (Input.isDown('right')) this.x += spd;
         if (Input.isDown('up')) this.y -= spd;
         if (Input.isDown('down')) this.y += spd;
 
-        // Clamp to Arena
+        // Clamp
         this.x = Math.max(arena.x + 8, Math.min(arena.x + arena.w - 8, this.x));
         this.y = Math.max(arena.y + 8, Math.min(arena.y + arena.h - 8, this.y));
 
         if (this.invuln > 0) this.invuln--;
 
-        // Bomb Mechanic
+        // Shoot
+        if (Input.isDown('fire') && Game.tick % 5 === 0) {
+            Game.bullets.push(new Bullet(this.x - 5, this.y - 10, -Math.PI/2, 12, 'player'));
+            Game.bullets.push(new Bullet(this.x + 5, this.y - 10, -Math.PI/2, 12, 'player'));
+            AudioMan.sfx('shoot');
+        }
+
+        // Bomb
         if (Input.isDown('bomb') && this.tp >= 100) {
             this.tp = 0;
-            Game.bullets = []; // Clear screen
+            Game.clearEnemyBullets();
             Game.particles.push(new Effect(this.x, this.y, 'nova'));
-            Synth.play('bomb');
-            this.hp = Math.min(this.maxHp, this.hp + 2); // Small heal
+            AudioMan.sfx('bomb');
             Game.shake = 20;
         }
     }
 
     draw(ctx) {
         if (this.invuln > 0 && Math.floor(Date.now()/50)%2) return;
-
+        
         // Draw Heart
         ctx.fillStyle = CONFIG.colors.heart;
         ctx.beginPath();
-        const topCurveHeight = this.spriteR * 0.3;
-        ctx.moveTo(this.x, this.y + this.spriteR * 0.3);
-        ctx.bezierCurveTo(this.x, this.y, this.x - this.spriteR, this.y, this.x - this.spriteR, this.y + topCurveHeight);
-        ctx.bezierCurveTo(this.x - this.spriteR, this.y + (this.spriteR + topCurveHeight) / 2, 
-                          this.x, this.y + (this.spriteR + topCurveHeight), 
-                          this.x, this.y + this.spriteR * 1.5);
-        ctx.bezierCurveTo(this.x, this.y + (this.spriteR + topCurveHeight), 
-                          this.x + this.spriteR, this.y + (this.spriteR + topCurveHeight) / 2, 
-                          this.x + this.spriteR, this.y + topCurveHeight);
-        ctx.bezierCurveTo(this.x + this.spriteR, this.y, this.x, this.y, this.x, this.y + this.spriteR * 0.3);
+        const y = this.y; const x = this.x; const r = this.spriteR;
+        ctx.moveTo(x, y + r/2);
+        ctx.bezierCurveTo(x, y, x - r, y - r, x - r, y);
+        ctx.bezierCurveTo(x - r, y + r, x, y + r*1.5, x, y + r*2);
+        ctx.bezierCurveTo(x, y + r*1.5, x + r, y + r, x + r, y);
+        ctx.bezierCurveTo(x + r, y - r, x, y - r, x, y + r/2);
         ctx.fill();
 
-        // Draw Hitbox (Soul) when focused
         if (Input.isDown('focus')) {
             ctx.fillStyle = CONFIG.colors.soul;
-            ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(this.x, this.y + r, this.r, 0, Math.PI*2); ctx.fill();
         }
     }
 }
 
 class Bullet {
-    constructor(x, y, angle, speed, type) {
+    constructor(x, y, angle, speed, type, color) {
         this.x = x; this.y = y;
         this.vx = Math.cos(angle) * speed;
         this.vy = Math.sin(angle) * speed;
-        this.type = type; // 0: pellet, 1: orb, 2: beam
+        this.type = type; // 'player', 'enemy'
+        this.color = color || '#FFF';
         this.active = true;
         this.grazed = false;
         this.timer = 0;
     }
-
     update() {
+        this.x += this.vx; this.y += this.vy;
         this.timer++;
-        
-        // Behaviors
-        if (this.type === 'sine') {
-            this.x += this.vx + Math.cos(this.timer * 0.1) * 2;
-            this.y += this.vy;
-        } else if (this.type === 'accel') {
-            this.vx *= 1.02;
-            this.vy *= 1.02;
-            this.x += this.vx;
-            this.y += this.vy;
-        } else {
-            this.x += this.vx;
-            this.y += this.vy;
-        }
-
-        // Bounds check (wide bounds for reentry)
-        if (this.x < -50 || this.x > CONFIG.w + 50 || this.y < -50 || this.y > CONFIG.h + 50) {
-            this.active = false;
-        }
+        // Bounds
+        if(this.x<-50 || this.x>CONFIG.w+50 || this.y<-50 || this.y>CONFIG.h+50) this.active = false;
     }
-
     draw(ctx) {
-        ctx.fillStyle = CONFIG.colors.bullet;
-        ctx.beginPath(); ctx.arc(this.x, this.y, 4, 0, Math.PI*2); ctx.fill();
-        ctx.strokeStyle = '#888'; ctx.stroke();
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        if(this.type === 'player') {
+            ctx.rect(this.x-2, this.y-5, 4, 10);
+        } else {
+            ctx.arc(this.x, this.y, 5, 0, Math.PI*2);
+        }
+        ctx.fill();
     }
 }
 
@@ -458,67 +483,83 @@ class Effect {
     constructor(x, y, type) {
         this.x = x; this.y = y;
         this.type = type;
-        this.life = 30;
-        this.maxLife = 30;
-        this.vx = (Math.random() - 0.5) * 4;
-        this.vy = (Math.random() - 0.5) * 4;
+        this.life = 30; this.maxLife = 30;
+        this.vx = (Math.random()-0.5)*4; this.vy = (Math.random()-0.5)*4;
     }
-    update() {
-        this.x += this.vx;
-        this.y += this.vy;
-        this.life--;
-    }
+    update() { this.x+=this.vx; this.y+=this.vy; this.life--; }
     draw(ctx) {
-        const a = this.life / this.maxLife;
-        ctx.globalAlpha = a;
-        if (this.type === 'hit') ctx.fillStyle = CONFIG.colors.warn;
-        else if (this.type === 'graze') ctx.fillStyle = CONFIG.colors.soul;
-        else ctx.fillStyle = '#FFF';
-        
-        if (this.type === 'nova') {
-            ctx.beginPath(); ctx.arc(this.x, this.y, (30-this.life)*10, 0, Math.PI*2); 
-            ctx.strokeStyle = CONFIG.colors.soul; ctx.stroke();
+        ctx.globalAlpha = this.life / this.maxLife;
+        if(this.type==='nova') {
+            ctx.strokeStyle = CONFIG.colors.soul;
+            ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.arc(this.x, this.y, (30-this.life)*15, 0, Math.PI*2); ctx.stroke();
         } else {
+            ctx.fillStyle = this.type==='hit' ? CONFIG.colors.heart : CONFIG.colors.soul;
             ctx.fillRect(this.x, this.y, 4, 4);
         }
         ctx.globalAlpha = 1;
     }
 }
 
-// --- MAIN ENGINE ---
+// --- GAME LOGIC ---
 const Game = {
     canvas: document.getElementById('gameCanvas'),
     ctx: null,
+    tick: 0,
+    state: 'MENU', // MENU, INTRO, DIALOGUE, COMBAT, GAMEOVER, WIN
     
-    // State
-    state: 'MENU',
     player: null,
     bullets: [],
     particles: [],
-    
-    // Arena (The Box)
     arena: { x: 0, y: 0, w: 0, h: 0, targetW: 0, targetH: 0 },
     shake: 0,
     
-    // Script
+    // Script & Flow
     scriptIndex: 0,
-    scriptTimer: 0,
-    textTimer: 0,
-    fullText: "",
-    currentText: "",
-    isTextDone: false,
+    bossHp: 100,
+    maxBossHp: 100,
+    pattern: null,
+    patternTimer: 0,
     
-    // Patterns
-    battleTimer: 0,
-    patternType: '',
+    script: [
+        { t: 'text', f: 'sys', txt: "IDENTITY CONFIRMED: DIVIJA." },
+        { t: 'text', f: 'sys', txt: "VARIABLES: Stubbornness > 99%. Logic < Undefined." },
+        { t: 'text', f: 'heart', txt: "Where am I? Why is it so quiet?" },
+        { t: 'text', f: 'sys', txt: "You are in the Compiler. I am debugging your path." },
+        { t: 'text', f: 'sys', txt: "Survival requires precision. Let us begin." },
+        
+        // PHASE 1: RAIN
+        { t: 'fight', p: 'rain', d: 500, txt: "PHASE 1: THE RAIN" },
+        
+        { t: 'text', f: 'sys', txt: "You dodge the obvious. But can you dodge the confusion?" },
+        { t: 'text', f: 'heart', txt: "I'm not confused. I'm just getting started." },
+
+        // PHASE 2: SINE
+        { t: 'fight', p: 'sine', d: 600, txt: "PHASE 2: THE FREQUENCY" },
+
+        { t: 'text', f: 'sys', txt: "Your heart rate is elevating. Good." },
+        { t: 'text', f: 'heart', txt: "Stop analyzing me! I'm not a math problem." },
+        { t: 'text', f: 'sys', txt: "Everything is a math problem. Even love." },
+
+        // PHASE 3: FLOWER (Rotational)
+        { t: 'fight', p: 'flower', d: 700, txt: "PHASE 3: THE BLOSSOM" },
+
+        { t: 'text', f: 'heart', txt: "Hah... Hah... Is that it?" },
+        { t: 'text', f: 'sys', txt: "You are resilient. Daddy taught you well." },
+        { t: 'text', f: 'heart', txt: "Don't bring him into this!" },
+        { t: 'text', f: 'sys', txt: "He is the constant in your equation. But now, you must stand alone." },
+
+        // PHASE 4: FINAL (Chaos)
+        { t: 'fight', p: 'chaos', d: 900, txt: "FINAL PHASE: THE CALCULUS" },
+        
+        { t: 'win' }
+    ],
 
     init() {
         this.ctx = this.canvas.getContext('2d');
-        this.canvas.width = CONFIG.w;
-        this.canvas.height = CONFIG.h;
+        this.canvas.width = CONFIG.w; this.canvas.height = CONFIG.h;
         Input.init();
         
-        // Game Loop
         const loop = () => {
             this.update();
             this.draw();
@@ -532,195 +573,151 @@ const Game = {
         this.bullets = [];
         this.particles = [];
         this.scriptIndex = 0;
-        
-        // Initial Arena Size
         this.arena = { x: 300, y: 350, w: 200, h: 150, targetW: 200, targetH: 150 };
-        
-        this.state = 'SCRIPT';
-        this.nextScript();
         
         document.getElementById('title-screen').classList.add('hidden');
         document.getElementById('game-over').classList.add('hidden');
-        document.getElementById('ui-layer').style.opacity = 1;
+        
+        AudioMan.playBGM();
+        Cinematic.start(() => {
+            document.getElementById('ui-layer').style.opacity = 1;
+            this.nextScript();
+        });
     },
-
-    // --- SCRIPT DATA (The Story) ---
-    script: [
-        { type: 'text', face: 'sys', text: "SYSTEM: Boot sequence initiated." },
-        { type: 'text', face: 'sys', text: "SYSTEM: Subject 'Divija' detected." },
-        { type: 'text', face: 'sys', text: "ANALYSIS: High levels of stubbornness and... brilliance." },
-        { type: 'text', face: 'heart', text: "Who are you? Why is it so dark?" },
-        { type: 'text', face: 'sys', text: "I am the Logic. You are the Heart. I am here to test your variables." },
-        { type: 'text', face: 'sys', text: "Let's see how you handle a little CHAOS." },
-        
-        // BATTLE 1: RAIN
-        { type: 'battle', pattern: 'rain', duration: 400 },
-        
-        { type: 'text', face: 'heart', text: "Is that all you got? I've handled worse Mondays." },
-        { type: 'text', face: 'sys', text: "Arrogance. A common defense mechanism." },
-        { type: 'text', face: 'sys', text: "You push people away. You build walls. Like this box." },
-        { type: 'text', face: 'heart', text: "Walls keep me safe. Walls make sense." },
-        { type: 'text', face: 'sys', text: "Walls also keep the light out. Try to calculate this trajectory." },
-
-        // BATTLE 2: SINE WAVES
-        { type: 'battle', pattern: 'sine', duration: 500 },
-
-        { type: 'text', face: 'sys', text: "Impressive. You graze the danger, but you don't let it touch you." },
-        { type: 'text', face: 'heart', text: "It's called efficiency." },
-        { type: 'text', face: 'sys', text: "It's called fear. Fear of being known. Fear of being loved." },
-        { type: 'text', face: 'sys', text: "Why do you hide your kindness behind a sharp tongue?" },
-        { type: 'text', face: 'heart', text: "Because... if I'm soft, I break." },
-        { type: 'text', face: 'sys', text: "Incorrect. The strongest materials are malleable." },
-        { type: 'text', face: 'sys', text: "Prepare for the final proof." },
-
-        // BATTLE 3: SPIRAL CHAOS
-        { type: 'battle', pattern: 'spiral', duration: 600 },
-
-        { type: 'text', face: 'heart', text: "I... I'm still standing." },
-        { type: 'text', face: 'sys', text: "Q.E.D. The proof is complete." },
-        { type: 'text', face: 'sys', text: "You are tough. But you are also loved." },
-        { type: 'text', face: 'sys', text: "And I am not just the System." },
-        { type: 'win' }
-    ],
 
     nextScript() {
         if (this.scriptIndex >= this.script.length) return;
-        
-        const event = this.script[this.scriptIndex];
+        const s = this.script[this.scriptIndex];
         this.scriptIndex++;
 
-        if (event.type === 'text') {
+        if (s.t === 'text') {
             this.state = 'DIALOGUE';
-            this.startDialogue(event.text, event.face);
-            // Shrink arena for intimacy
             this.arena.targetW = CONFIG.w - 100;
             this.arena.targetH = 150;
-        } else if (event.type === 'battle') {
+            this.showDialogue(s.txt, s.f);
+        } else if (s.t === 'fight') {
             this.state = 'COMBAT';
-            this.battleTimer = event.duration;
-            this.patternType = event.pattern;
+            this.pattern = s.p;
+            this.patternTimer = s.d;
+            this.arena.targetW = 500;
+            this.arena.targetH = 450;
             document.getElementById('dialogue-box').style.display = 'none';
-            // Expand arena for combat
-            this.arena.targetW = 400;
-            this.arena.targetH = 400;
-        } else if (event.type === 'win') {
-            document.getElementById('victory-screen').classList.remove('hidden');
+        } else if (s.t === 'win') {
             this.state = 'WIN';
+            document.getElementById('victory-screen').classList.remove('hidden');
         }
     },
 
-    startDialogue(text, face) {
+    showDialogue(text, face) {
         const box = document.getElementById('dialogue-box');
-        const faceIcon = document.getElementById('face-icon');
+        const icon = document.getElementById('face-icon');
         box.style.display = 'block';
+        icon.innerText = face === 'heart' ? '♥' : '⚡';
+        icon.style.color = face === 'heart' ? CONFIG.colors.heart : CONFIG.colors.soul;
         
-        faceIcon.innerText = face === 'heart' ? '♥' : '⚡';
-        faceIcon.style.color = face === 'heart' ? CONFIG.colors.heart : CONFIG.colors.soul;
+        // Typewriter
+        let i = 0;
+        const el = document.getElementById('dialogue-text');
+        el.innerText = "";
+        this.inputLocked = true;
         
-        this.fullText = text;
-        this.currentText = "";
-        this.textTimer = 0;
-        this.isTextDone = false;
+        const timer = setInterval(() => {
+            el.innerText += text.charAt(i);
+            i++;
+            if (i % 2 === 0) AudioMan.sfx('text');
+            if (i >= text.length) {
+                clearInterval(timer);
+                this.inputLocked = false;
+            }
+        }, 30);
     },
 
     update() {
-        // Arena Interpolation (The Box Breathing)
-        const lerp = (start, end, amt) => (1 - amt) * start + amt * end;
+        this.tick++;
+        
+        // Arena Lerp
+        const ease = 0.08;
         this.arena.x = (CONFIG.w - this.arena.w) / 2;
         this.arena.y = (CONFIG.h - this.arena.h) / 2 + (this.state === 'DIALOGUE' ? 200 : 0);
-        this.arena.w = lerp(this.arena.w, this.arena.targetW, 0.1);
-        this.arena.h = lerp(this.arena.h, this.arena.targetH, 0.1);
+        this.arena.w += (this.arena.targetW - this.arena.w) * ease;
+        this.arena.h += (this.arena.targetH - this.arena.h) * ease;
 
-        // Screen Shake
-        if (this.shake > 0) {
-            this.ctx.save();
-            const dx = (Math.random() - 0.5) * this.shake;
-            const dy = (Math.random() - 0.5) * this.shake;
-            this.ctx.translate(dx, dy);
-            this.shake *= 0.9;
-        }
+        if (this.shake > 0) { this.shake *= 0.9; if(this.shake < 0.5) this.shake = 0; }
 
-        if (this.state === 'COMBAT') {
+        if (this.state === 'DIALOGUE') {
             this.player.update(this.arena);
-            this.updateBullets();
-            this.handleSpawner();
-            
-            if (this.battleTimer <= 0 && this.bullets.length === 0) {
+            if (Input.isDown('fire') && !this.inputLocked && this.tick % 10 === 0) {
                 this.nextScript();
             }
-        } else if (this.state === 'DIALOGUE') {
+        } else if (this.state === 'COMBAT') {
             this.player.update(this.arena);
-            // Typewriter effect
-            if (!this.isTextDone) {
-                this.textTimer++;
-                if (this.textTimer % 2 === 0) {
-                    this.currentText = this.fullText.substring(0, this.currentText.length + 1);
-                    document.getElementById('dialogue-text').innerText = this.currentText;
-                    Synth.play('blip');
-                    if (this.currentText === this.fullText) this.isTextDone = true;
-                }
-            }
+            this.patternTimer--;
             
-            if (Input.isDown('fire') && !this.keyLock) {
-                if (this.isTextDone) {
-                    this.keyLock = true;
-                    this.nextScript();
-                } else {
-                    // Skip text
-                    this.currentText = this.fullText;
-                    this.isTextDone = true;
-                    document.getElementById('dialogue-text').innerText = this.currentText;
-                    this.keyLock = true;
-                }
+            this.handleSpawner();
+            this.updateBullets();
+
+            // Progress Bar (Time based for survival)
+            if (this.patternTimer <= 0) {
+                this.bullets.forEach(b => b.active = false); // Clear
+                this.nextScript();
             }
-            if (!Input.isDown('fire')) this.keyLock = false;
         }
 
-        // Particles always update
-        this.particles.forEach((p, i) => {
+        this.particles.forEach((p,i) => {
             p.update();
-            if (p.life <= 0) this.particles.splice(i, 1);
+            if(p.life<=0) this.particles.splice(i,1);
         });
-        
-        // Update UI
-        const hpPct = (this.player.hp / this.player.maxHp) * 100;
-        document.getElementById('hp-fill').style.width = hpPct + '%';
-        document.getElementById('hp-text').innerText = Math.floor(this.player.hp) + "/" + this.player.maxHp;
-        
+
+        // UI Updates
+        document.getElementById('hp-fill').style.width = (this.player.hp/this.player.maxHp*100) + '%';
+        document.getElementById('hp-text').innerText = this.player.hp;
         document.getElementById('tp-fill').style.width = this.player.tp + '%';
-        document.getElementById('tp-text').innerText = Math.floor(this.player.tp) + "%";
-        
-        if (this.shake > 0) this.ctx.restore();
+        document.getElementById('tp-text').innerText = Math.floor(this.player.tp) + '%';
     },
 
     handleSpawner() {
-        this.battleTimer--;
-        const t = this.battleTimer;
-        
-        // Prevent negative timer glitches
-        if (t < 0) return;
+        const t = this.tick;
+        const cx = CONFIG.w/2;
+        const cy = this.arena.y + this.arena.h/2 - 100;
 
-        const center = { x: CONFIG.w/2, y: this.arena.y + this.arena.h/2 };
-
-        if (this.patternType === 'rain') {
-            if (t % 10 === 0) {
+        // Difficulty curves
+        if (this.pattern === 'rain') {
+            if (t % 8 === 0) {
                 const x = this.arena.x + Math.random() * this.arena.w;
-                this.bullets.push(new Bullet(x, 0, Math.PI/2, 4, 'linear'));
+                this.bullets.push(new Bullet(x, 0, Math.PI/2, 4 + Math.random()*2, 'enemy', '#0ff'));
             }
-        } else if (this.patternType === 'sine') {
+        } else if (this.pattern === 'sine') {
             if (t % 15 === 0) {
-                this.bullets.push(new Bullet(center.x, 100, Math.PI/2, 3, 'sine'));
+                const b = new Bullet(cx, 100, Math.PI/2, 3, 'enemy', '#ff0');
+                b.vx = Math.cos(t/20) * 2;
+                this.bullets.push(b);
             }
             if (t % 60 === 0) {
-                // Targeted shot
-                const angle = Math.atan2(this.player.y - 100, this.player.x - center.x);
-                this.bullets.push(new Bullet(center.x, 100, angle, 5, 'accel'));
+                // Aimed Shot
+                const angle = Math.atan2(this.player.y - 100, this.player.x - cx);
+                this.bullets.push(new Bullet(cx, 100, angle, 6, 'enemy', '#f00'));
             }
-        } else if (this.patternType === 'spiral') {
+        } else if (this.pattern === 'flower') {
+            if (t % 15 === 0) {
+                const petals = 6;
+                const offset = t * 0.1;
+                for (let i = 0; i < petals; i++) {
+                    const angle = (i / petals) * Math.PI * 2 + offset;
+                    this.bullets.push(new Bullet(cx, 150, angle, 3, 'enemy', '#f0f'));
+                }
+            }
+        } else if (this.pattern === 'chaos') {
+            // Spiral + Aimed
             if (t % 4 === 0) {
-                const angle = t * 0.1;
-                this.bullets.push(new Bullet(center.x, 150, angle, 3, 'linear'));
-                this.bullets.push(new Bullet(center.x, 150, angle + Math.PI, 3, 'linear'));
+                const angle = t * 0.2;
+                this.bullets.push(new Bullet(cx, 150, angle, 4, 'enemy', '#fff'));
+                this.bullets.push(new Bullet(cx, 150, angle + Math.PI, 4, 'enemy', '#fff'));
+            }
+            if (t % 50 === 0) {
+                const angle = Math.atan2(this.player.y - 150, this.player.x - cx);
+                for(let i=-1; i<=1; i++) {
+                    this.bullets.push(new Bullet(cx, 150, angle + i*0.2, 5, 'enemy', '#f00'));
+                }
             }
         }
     },
@@ -730,31 +727,29 @@ const Game = {
             const b = this.bullets[i];
             b.update();
             
-            if (!b.active) {
-                this.bullets.splice(i, 1);
-                continue;
-            }
+            if (!b.active) { this.bullets.splice(i, 1); continue; }
+            if (b.type === 'player') continue; // Enemy collision handled elsewhere if we had enemies
 
             const dx = b.x - this.player.x;
-            const dy = b.y - this.player.y;
+            const dy = b.y - (this.player.y + this.player.spriteR); // Offset for heart center
             const dist = Math.sqrt(dx*dx + dy*dy);
 
-            // Graze (Close call)
-            if (dist < 30 && !b.grazed) {
+            // Graze
+            if (dist < 35 && !b.grazed && b.type === 'enemy') {
                 b.grazed = true;
-                this.player.tp = Math.min(100, this.player.tp + 5);
+                this.player.tp = Math.min(100, this.player.tp + 2); // Charge Bomb
                 this.particles.push(new Effect(b.x, b.y, 'graze'));
-                Synth.play('graze');
+                AudioMan.sfx('graze');
             }
 
             // Hit
-            if (dist < this.player.r + 4) { // Hitbox radius + bullet radius
+            if (dist < this.player.r + 5 && b.type === 'enemy') {
                 if (this.player.invuln === 0) {
-                    this.player.hp -= 4;
-                    this.player.invuln = 60;
-                    this.shake = 10;
+                    this.player.hp -= 2; // Damage
+                    this.player.invuln = 50;
+                    this.shake = 15;
                     this.particles.push(new Effect(this.player.x, this.player.y, 'hit'));
-                    Synth.play('hurt');
+                    AudioMan.sfx('hit');
                     b.active = false;
                     
                     if (this.player.hp <= 0) {
@@ -766,58 +761,67 @@ const Game = {
         }
     },
 
+    clearEnemyBullets() {
+        this.bullets.forEach(b => {
+            if(b.type === 'enemy') {
+                b.active = false;
+                this.particles.push(new Effect(b.x, b.y, 'graze'));
+            }
+        });
+    },
+
     draw() {
-        // Clear Background
         this.ctx.fillStyle = CONFIG.colors.bg;
         this.ctx.fillRect(0, 0, CONFIG.w, CONFIG.h);
 
-        if (!this.player) return;
+        this.ctx.save();
+        // Screen Shake
+        if (this.shake > 0) {
+            this.ctx.translate((Math.random()-0.5)*this.shake, (Math.random()-0.5)*this.shake);
+        }
 
-        // Draw Arena (The Box)
-        this.ctx.strokeStyle = '#FFF';
-        this.ctx.lineWidth = 4;
+        // Arena Outline
+        this.ctx.strokeStyle = '#FFF'; this.ctx.lineWidth = 4;
         this.ctx.strokeRect(this.arena.x, this.arena.y, this.arena.w, this.arena.h);
 
-        // Draw Entities (clipped to box if needed, but we usually want bullets visible outside)
+        // Clip Content to Arena
         this.ctx.save();
         this.ctx.beginPath();
         this.ctx.rect(this.arena.x, this.arena.y, this.arena.w, this.arena.h);
-        this.ctx.clip(); // Clip Player to box
+        this.ctx.clip();
 
-        // Grid Background inside box
-        this.ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-        this.ctx.lineWidth = 1;
-        const offset = (Date.now() / 20) % 20;
-        for(let i=0; i<CONFIG.w; i+=20) {
-            this.ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, CONFIG.h); ctx.stroke();
-            this.ctx.beginPath(); ctx.moveTo(0, i + offset); ctx.lineTo(CONFIG.w, i + offset); ctx.stroke();
+        // Grid Background (Moving)
+        this.ctx.strokeStyle = 'rgba(255,255,255,0.1)'; this.ctx.lineWidth = 1;
+        const off = (this.tick / 2) % 40;
+        for(let i=0; i<CONFIG.w; i+=40) {
+            this.ctx.beginPath(); this.ctx.moveTo(i, 0); this.ctx.lineTo(i, CONFIG.h); this.ctx.stroke();
+            this.ctx.beginPath(); this.ctx.moveTo(0, i + off); this.ctx.lineTo(CONFIG.w, i + off); this.ctx.stroke();
         }
 
-        this.player.draw(this.ctx);
-        this.ctx.restore();
+        if(this.player) this.player.draw(this.ctx);
+        this.ctx.restore(); // End Clip
 
-        // Draw Bullets (Above clip so they look threatening)
+        // Bullets drawn ABOVE clip (visual style choice, looks more 3D)
         this.bullets.forEach(b => b.draw(this.ctx));
         this.particles.forEach(p => p.draw(this.ctx));
         
-        // Enemy "Eye" (The System)
+        // The Eye (System Boss)
         if (this.state === 'COMBAT') {
-            const cx = CONFIG.w/2;
-            const cy = this.arena.y - 40;
-            this.ctx.fillStyle = '#000';
-            this.ctx.strokeStyle = CONFIG.colors.soul;
-            this.ctx.lineWidth = 2;
-            this.ctx.beginPath(); ctx.arc(cx, cy, 30, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-            this.ctx.beginPath(); ctx.arc(cx, cy, 10, 0, Math.PI*2); ctx.fillStyle=CONFIG.colors.soul; ctx.fill();
+            const cx = CONFIG.w/2; const cy = this.arena.y - 50;
+            this.ctx.fillStyle = '#000'; this.ctx.strokeStyle = CONFIG.colors.soul;
+            this.ctx.lineWidth = 3;
+            this.ctx.beginPath(); this.ctx.arc(cx, cy, 40, 0, Math.PI*2); this.ctx.fill(); this.ctx.stroke();
+            this.ctx.fillStyle = CONFIG.colors.soul;
+            this.ctx.beginPath(); this.ctx.arc(cx, cy, 15, 0, Math.PI*2); this.ctx.fill();
         }
+        
+        this.ctx.restore(); // End Shake
     }
 };
 
-const ctx = document.getElementById('gameCanvas').getContext('2d');
-
-// --- EVENT LISTENERS ---
+// --- EVENTS ---
 document.getElementById('btn-start').addEventListener('click', () => {
-    Synth.init(); // Initialize audio context on user gesture
+    AudioMan.init();
     Game.init();
     Game.start();
 });
