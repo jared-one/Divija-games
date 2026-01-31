@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Divija: Shattered Reflection (Final)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+        :root {
+            --bg-dark: #0a0a12;
+            --ui-white: #f0f0f0;
+            --accent-red: #ff3366;
+            --accent-gold: #ffd700;
+            --soul-green: #00ffcc;
+            --shadow-purple: #2d004d;
+        }
+
+        body {
+            margin: 0;
+            background-color: #000;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'VT323', monospace;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none; /* Prevent scroll on mobile */
+        }
+
+        /* Scanline Overlay */
+        #crt-layer {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        #game-stage {
+            width: 800px;
+            height: 600px;
+            background: var(--bg-dark);
+            border: 4px solid var(--ui-white);
+            position: relative;
+            box-shadow: 0 0 40px rgba(0, 255, 204, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- VISUALS --- */
+        #bg-canvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; opacity: 0.6;
+        }
+
+        #actors-layer {
+            position: absolute; top: 10%; width: 100%; height: 40%;
+            z-index: 10;
+            display: flex; justify-content: space-between; padding: 0 100px; box-sizing: border-box;
+            align-items: flex-end;
+        }
+
+        .actor { width: 180px; height: 220px; transition: filter 0.5s; }
+
+        /* --- UI & HUD --- */
+        #ui-layer {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 740px; height: 220px; z-index: 20;
+            display: none;
+        }
+
+        #dialogue-box {
+            width: 100%; height: 100%;
+            border: 4px solid var(--ui-white);
+            background: #000;
+            padding: 20px; box-sizing: border-box;
+            font-size: 28px; color: white;
+            position: relative;
+        }
+
+        .stats-bar {
+            position: absolute; top: 20px; left: 20px;
+            color: white; font-size: 24px; z-index: 30;
+            text-shadow: 2px 2px black;
+        }
+
+        #hp-container {
+            display: inline-block; width: 150px; height: 20px;
+            background: #333; margin-left: 10px; vertical-align: middle;
+            border: 2px solid white;
+        }
+        #hp-fill {
+            width: 100%; height: 100%; background: var(--accent-gold);
+            transition: width 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+        #hp-text { margin-left: 10px; }
+
+        #enemy-hp-container {
+            position: absolute; top: 20px; right: 20px;
+            width: 300px; height: 10px; background: #333;
+            border: 2px solid #555; z-index: 30;
+            display: none;
+        }
+        #enemy-hp-fill { width: 100%; height: 100%; background: var(--ui-white); transition: width 0.5s; }
+
+        /* --- MENUS --- */
+        .choice-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px;
+            margin-top: 20px; width: 80%;
+        }
+        .action-btn {
+            border: 2px solid var(--accent-red);
+            color: var(--accent-red);
+            padding: 10px 20px;
+            text-transform: uppercase;
+            font-size: 24px;
+            cursor: pointer;
+            text-align: left;
+        }
+        .action-btn:hover, .action-btn.active {
+            background: var(--accent-red); color: black;
+            box-shadow: 0 0 15px var(--accent-red);
+        }
+
+        /* --- MINIGAME --- */
+        #bullet-box {
+            position: absolute;
+            top: 50%; left: 50%; transform: translate(-50%, -60%);
+            width: 250px; height: 250px;
+            border: 4px solid white;
+            background: black;
+            z-index: 50; display: none;
+        }
+
+        /* --- MOBILE CONTROLS --- */
+        #mobile-controls {
+            position: absolute; bottom: 20px; right: 20px;
+            z-index: 900; display: none; /* Hidden unless on mobile/dodge */
+            width: 150px; height: 150px;
+        }
+        .dpad-row { display: flex; justify-content: center; width: 100%; }
+        .dpad-btn {
+            width: 45px; height: 45px;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.5);
+            color: white; font-size: 20px;
+            margin: 2px;
+            display: flex; justify-content: center; align-items: center;
+            border-radius: 8px;
+            touch-action: manipulation;
+        }
+        .dpad-btn:active { background: rgba(255,255,255,0.6); }
+
+        /* --- ANIMATIONS --- */
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 0, 0); }
+            20%, 80% { transform: translate3d(4px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+            40%, 60% { transform: translate3d(6px, 0, 0); }
+        }
+
+        .divija-float { animation: float 4s ease-in-out infinite; }
+        .echo-glitch { animation: glitch 0.2s infinite; opacity: 0.9; }
+
+        @keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-10px);} }
+        @keyframes glitch { 
+            0% { transform: translate(0,0); } 
+            20% { transform: translate(-2px, 2px); } 
+            40% { transform: translate(-2px, -2px); } 
+            60% { transform: translate(2px, 2px); } 
+            80% { transform: translate(2px, -2px); } 
+            100% { transform: translate(0,0); } 
+        }
+
+        /* --- START SCREEN --- */
+        #start-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 100;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            text-align: center;
+        }
+        h1 { font-size: 60px; color: var(--ui-white); margin: 0; text-shadow: 4px 4px var(--accent-red); }
+        .blink { animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+
+    </style>
+</head>
+<body>
+
+<div id="crt-layer"></div>
+
+<div id="game-stage">
+    
+    <canvas id="bg-canvas" width="800" height="600"></canvas>
+
+    <!-- HUD -->
+    <div class="stats-bar">
+        DIVIJA <span style="color:var(--accent-red)">LV 1</span>
+        <div id="hp-container"><div id="hp-fill"></div></div>
+        <span id="hp-text">20/20</span>
+    </div>
+
+    <div id="enemy-hp-container"><div id="enemy-hp-fill"></div></div>
+
+    <!-- SVGs (Keep existing perfect SVGs) -->
+    <svg width="0" height="0">
+        <defs>
+            <g id="svg-divija">
+                <ellipse cx="100" cy="240" rx="60" ry="10" fill="rgba(0,0,0,0.5)"/>
+                <path d="M140,100 Q180,150 160,220" stroke="#ff3366" stroke-width="15" fill="none" opacity="0.9">
+                    <animate attributeName="d" values="M140,100 Q180,150 160,220; M140,100 Q190,140 170,230; M140,100 Q180,150 160,220" dur="3s" repeatCount="indefinite"/>
+                </path>
+                <rect x="70" y="120" width="60" height="90" fill="#3b4cca" rx="10"/>
+                <path d="M70,130 Q40,160 50,190" stroke="#d2b48c" stroke-width="12" stroke-linecap="round" fill="none"/>
+                <path d="M130,130 Q160,160 150,190" stroke="#d2b48c" stroke-width="12" stroke-linecap="round" fill="none"/>
+                <circle cx="100" cy="80" r="35" fill="#d2b48c"/>
+                <path d="M60,60 Q100,10 140,60 L140,100 Q100,80 60,100 Z" fill="#1a1a1a"/>
+                <circle cx="100" cy="110" r="3" fill="#1a1a1a"/>
+                <ellipse cx="90" cy="80" rx="3" ry="5" fill="#222"/>
+                <ellipse cx="110" cy="80" rx="3" ry="5" fill="#222"/>
+                <path d="M65,65 Q100,55 135,65" stroke="#ff3366" stroke-width="5" fill="none"/>
+            </g>
+
+            <g id="svg-echo">
+                <path d="M100,50 L140,150 L60,150 Z" fill="#111" stroke="#fff" stroke-width="2">
+                    <animate attributeName="d" values="M100,50 L140,150 L60,150 Z; M100,40 L150,140 L50,140 Z; M100,50 L140,150 L60,150 Z" dur="0.2s" repeatCount="indefinite"/>
+                </path>
+                <circle cx="100" cy="110" r="12" fill="#ff0000" opacity="0.8"/>
+                <rect x="40" y="80" width="10" height="10" fill="#fff" opacity="0.5"/>
+                <rect x="150" y="60" width="8" height="8" fill="#fff" opacity="0.5"/>
+            </g>
+        </defs>
+    </svg>
+
+    <div id="actors-layer">
+        <svg class="actor divija-float" viewBox="0 0 200 250"><use href="#svg-divija"/></svg>
+        <svg class="actor" id="echo-sprite" viewBox="0 0 200 250" style="opacity:0"><use href="#svg-echo"/></svg>
+    </div>
+
+    <!-- UI Box -->
+    <div id="ui-layer">
+        <div id="dialogue-box">
+            <div id="writer-text">* The reflection is silent.</div>
+            
+            <!-- Main Menu -->
+            <div id="main-menu" class="choice-grid" style="display:none;">
+                <div class="action-btn active" data-idx="0">FIGHT</div>
+                <div class="action-btn" data-idx="1">ACT</div>
+                <div class="action-btn" data-idx="2">ITEM</div>
+                <div class="action-btn" data-idx="3">MERCY</div>
+            </div>
+
+             <!-- Act Sub Menu -->
+             <div id="act-menu" class="choice-grid" style="display:none;">
+                <div class="action-btn active" data-idx="0">CHECK</div>
+                <div class="action-btn" data-idx="1">LISTEN</div>
+                <div class="action-btn" data-idx="2">REASSURE</div>
+                <div class="action-btn" data-idx="3">BACK</div>
+            </div>
+
+            <div class="tap-hint" style="font-size:18px; color:#888; position:absolute; bottom:10px; right:10px;">[ENTER] or [TAP]</div>
+        </div>
+    </div>
+
+    <canvas id="bullet-box" width="250" height="250"></canvas>
+
+    <!-- Mobile D-PAD -->
+    <div id="mobile-controls">
+        <div class="dpad-row">
+            <div class="dpad-btn" id="m-up">▲</div>
+        </div>
+        <div class="dpad-row">
+            <div class="dpad-btn" id="m-left">◀</div>
+            <div class="dpad-btn" style="opacity:0"></div>
+            <div class="dpad-btn" id="m-right">▶</div>
+        </div>
+        <div class="dpad-row">
+            <div class="dpad-btn" id="m-down">▼</div>
+        </div>
+    </div>
+
+    <!-- Start Screen -->
+    <div id="start-overlay">
+        <h1>DIVIJA</h1>
+        <h2 style="color:#666">SHATTERED REFLECTION</h2>
+        <br>
+        <p class="blink">[ PRESS ENTER OR TAP ]</p>
+        <p style="font-size:14px; color:#444">Recommended: Sound ON</p>
+    </div>
+
+</div>
+
+<script>
+/* 
+    PhD-LEVEL IMPLEMENTATION 
+    - Event Driven State Machine
+    - Procedural Audio
+    - Canvas-based Bullet Hell with Mobile Support
+    - Branching Narrative
+*/
+
+// --- AUDIO ENGINE ---
+const AudioSys = {
+    ctx: null,
+    
+    init() {
+        if (!this.ctx) {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+    },
+
+    playTone(freq, type='sine', dur=0.1, vol=0.1) {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+        gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + dur);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + dur);
+    },
+
+    playSFX(type) {
+        this.init();
+        if (type === 'select') this.playTone(440, 'square', 0.1, 0.1);
+        if (type === 'confirm') this.playTone(660, 'square', 0.1, 0.1);
+        if (type === 'hit') {
+            this.playTone(150, 'sawtooth', 0.2, 0.2);
+            this.playTone(100, 'sawtooth', 0.2, 0.2);
+        }
+        if (type === 'heal') {
+            this.playTone(440, 'sine', 0.2, 0.1);
+            setTimeout(()=>this.playTone(660, 'sine', 0.4, 0.1), 100);
+        }
+    }
+};
+
+// --- GAME STATE ---
+const Game = {
+    state: 'start', // start, dialogue, menu, act_menu, dodge, gameover
+    hp: 20,
+    maxHp: 20,
+    enemyHp: 100,
+    textSpeed: 30,
+    tutorialDone: false,
+    actLevel: 0, // How much you've reasoned
+    loopId: null
+};
+
+// --- DOM ELEMENTS ---
+const UI = {
+    overlay: document.getElementById('start-overlay'),
+    writer: document.getElementById('writer-text'),
+    mainMenu: document.getElementById('main-menu'),
+    actMenu: document.getElementById('act-menu'),
+    hpFill: document.getElementById('hp-fill'),
+    hpText: document.getElementById('hp-text'),
+    enemyBar: document.getElementById('enemy-hp-container'),
+    enemyFill: document.getElementById('enemy-hp-fill'),
+    echo: document.getElementById('echo-sprite'),
+    bulletCanvas: document.getElementById('bullet-box'),
+    dialogueBox: document.getElementById('ui-layer'),
+    mobileControls: document.getElementById('mobile-controls')
+};
+
+// --- INPUT HANDLING ---
+const Keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
+
+window.addEventListener('keydown', e => {
+    if (Keys.hasOwnProperty(e.key) || Keys.hasOwnProperty(e.key.toLowerCase())) {
+        Keys[e.key] = true;
+    }
+    if (e.key === 'Enter') handleConfirm();
+    if (Game.state === 'menu' || Game.state === 'act_menu') handleMenuNav(e.key);
+});
+
+window.addEventListener('keyup', e => {
+    if (Keys.hasOwnProperty(e.key)) Keys[e.key] = false;
+});
+
+// Mobile D-Pad Events
+['up','down','left','right'].forEach(dir => {
+    const btn = document.getElementById(`m-${dir}`);
+    btn.addEventListener('touchstart', (e) => { e.preventDefault(); Keys[`Arrow${dir.charAt(0).toUpperCase()+dir.slice(1)}`] = true; });
+    btn.addEventListener('touchend', (e) => { e.preventDefault(); Keys[`Arrow${dir.charAt(0).toUpperCase()+dir.slice(1)}`] = false; });
+});
+
+document.body.addEventListener('click', (e) => {
+    // Check if clicking a menu button
+    if (e.target.classList.contains('action-btn')) {
+        // Handle menu click
+        const idx = parseInt(e.target.dataset.idx);
+        if (Game.state === 'menu') {
+            selectMenuOption(idx);
+            executeAction();
+        } else if (Game.state === 'act_menu') {
+            selectMenuOption(idx);
+            executeAct();
+        }
+        return;
+    }
+    // General tap to advance text
+    if (Game.state !== 'menu' && Game.state !== 'act_menu' && Game.state !== 'dodge') {
+        handleConfirm();
+    }
+});
+
+// --- CORE LOGIC ---
+
+function handleConfirm() {
+    AudioSys.init();
+    
+    if (Game.state === 'start') {
+        UI.overlay.style.display = 'none';
+        UI.dialogueBox.style.display = 'block';
+        startStory();
+    } else if (Game.state === 'dialogue') {
+        if (Typing.isBusy) {
+            Typing.finish();
+        } else {
+            Typing.next();
+        }
+    } else if (Game.state === 'menu') {
+        executeAction();
+    } else if (Game.state === 'act_menu') {
+        executeAct();
+    }
+}
+
+// Menu Navigation
+let menuIdx = 0;
+function handleMenuNav(key) {
+    const btns = Game.state === 'menu' ? UI.mainMenu.children : UI.actMenu.children;
+    
+    if (key === 'ArrowRight' || key === 'd') menuIdx = (menuIdx + 1) % 4;
+    if (key === 'ArrowLeft' || key === 'a') menuIdx = (menuIdx - 1 + 4) % 4;
+    
+    selectMenuOption(menuIdx);
+    AudioSys.playSFX('select');
+}
+
+function selectMenuOption(idx) {
+    menuIdx = idx;
+    const parent = Game.state === 'menu' ? UI.mainMenu : UI.actMenu;
+    Array.from(parent.children).forEach((btn, i) => {
+        if (i === idx) btn.classList.add('active');
+        else btn.classList.remove('active');
+    });
+}
+
+// --- STORY & DIALOGUE ---
+
+function startStory() {
+    Game.hp = 20; updateHUD();
+    Typing.queue([
+        "The mirror is cold to the touch.",
+        "A shadow moves within the glass.",
+        "It's you. But... not you.",
+        () => {
+            UI.echo.style.opacity = 1; 
+            UI.echo.classList.add('echo-glitch');
+            UI.enemyBar.style.display = 'block';
+        },
+        "ECHO: 'Do you really think you are good enough?'",
+        "ECHO: 'Let me show you your failures.'"
+    ], startTutorial);
+}
+
+function startTutorial() {
+    Typing.queue([
+        "TUTORIAL: Your Soul (Green) is fragile.",
+        "Use Arrow Keys or WASD to move.",
+        "Avoid the white fragments."
+    ], () => {
+        startDodge('tutorial');
+    });
+}
+
+function showMenu() {
+    Game.state = 'menu';
+    UI.mainMenu.style.display = 'grid';
+    UI.writer.innerHTML = "* The Echo awaits your answer.";
+    menuIdx = 0;
+    selectMenuOption(0);
+}
+
+function executeAction() {
+    UI.mainMenu.style.display = 'none';
+    AudioSys.playSFX('confirm');
+
+    const actions = ['fight', 'act', 'item', 'mercy'];
+    const choice = actions[menuIdx];
+
+    if (choice === 'fight') {
+        Typing.queue([
+            "You punch the glass.",
+            "It cracks, but your hand hurts.",
+            "Violence fuels its anger."
+        ], () => { 
+            Game.enemyHp -= 10; updateHUD();
+            startDodge('hard'); 
+        });
+    } else if (choice === 'act') {
+        Game.state = 'act_menu';
+        UI.actMenu.style.display = 'grid';
+        menuIdx = 0;
+        selectMenuOption(0);
+        UI.writer.innerHTML = "* What will you do?";
+    } else if (choice === 'item') {
+        if (Game.hp < Game.maxHp) {
+            Game.hp = Math.min(Game.hp + 10, Game.maxHp);
+            updateHUD();
+            AudioSys.playSFX('heal');
+            Typing.queue(["You took a deep breath.", "HP recovered."], () => startDodge('easy'));
+        } else {
+            Typing.queue(["Your HP is maxed out."], showMenu);
+        }
+    } else if (choice === 'mercy') {
+        if (Game.enemyHp <= 0 || Game.actLevel >= 3) {
+            winGame();
+        } else {
+            Typing.queue([
+                "The Echo refuses to listen yet.",
+                "You need to REASSURE it more."
+            ], () => startDodge('medium'));
+        }
+    }
+}
+
+function executeAct() {
+    UI.actMenu.style.display = 'none';
+    AudioSys.playSFX('confirm');
+    const acts = ['check', 'listen', 'reassure', 'back'];
+    const choice = acts[menuIdx];
+
+    if (choice === 'back') {
+        showMenu();
+        return;
+    }
+
+    if (choice === 'check') {
+        Typing.queue([
+            "ECHO - ATK 5 DEF 0",
+            "It is a manifestation of Imposter Syndrome.",
+            "It feeds on insecurity."
+        ], showMenu); // Doesn't end turn
+        return;
+    }
+
+    if (choice === 'listen') {
+        Typing.queue([
+            "You listen to the voices...",
+            "ECHO: 'Everyone is better than you.'",
+            "You acknowledge the fear without accepting it."
+        ], () => {
+            Game.actLevel++;
+            Game.enemyHp -= 15; updateHUD();
+            startDodge('medium');
+        });
+    }
+
+    if (choice === 'reassure') {
+        Game.actLevel++;
+        Game.enemyHp -= 30; updateHUD();
+        const responses = [
+            "You tell the Echo: 'We are learning.'",
+            "You say: 'It's okay to make mistakes.'",
+            "You smile: 'I accept you as part of me.'"
+        ];
+        const text = responses[Math.min(Game.actLevel-1, 2)] || responses[2];
+        
+        Typing.queue([
+            text,
+            "The Echo vibrates calmly."
+        ], () => startDodge('easy'));
+    }
+}
+
+// --- BULLET HELL MINIGAME ---
+
+function startDodge(difficulty) {
+    Game.state = 'dodge';
+    UI.writer.innerHTML = "";
+    UI.bulletCanvas.style.display = 'block';
+    
+    // Show Mobile Controls if screen is small
+    if (window.innerWidth < 800) UI.mobileControls.style.display = 'block';
+
+    const ctx = UI.bulletCanvas.getContext('2d');
+    let soul = { x: 125, y: 125 };
+    let bullets = [];
+    let frame = 0;
+    let maxFrames = (difficulty === 'tutorial') ? 300 : 400; // ~6 seconds
+
+    function spawnBullet() {
+        if (difficulty === 'tutorial') {
+            if (frame % 20 === 0) bullets.push({x: Math.random()*250, y: -10, vx: 0, vy: 2});
+        } else if (difficulty === 'easy') {
+            if (frame % 15 === 0) bullets.push({x: Math.random()*250, y: -10, vx: 0, vy: 3});
+        } else {
+            // Hard/Medium patterns
+            if (frame % 10 === 0) {
+                const angle = frame * 0.1;
+                bullets.push({x: 125, y: -10, vx: Math.sin(angle)*3, vy: 3});
+            }
+            if (frame % 40 === 0) { // Side sweep
+                bullets.push({x: 0, y: Math.random()*200, vx: 3, vy: 0});
+            }
+        }
+    }
+
+    function loop() {
+        if (Game.state !== 'dodge') return;
+
+        // Clear
+        ctx.fillStyle = 'rgba(0,0,0,0.4)'; // Trails
+        ctx.fillRect(0,0, 250, 250);
+
+        // Move Soul
+        const spd = 4;
+        if ((Keys.w || Keys.ArrowUp) && soul.y > 8) soul.y -= spd;
+        if ((Keys.s || Keys.ArrowDown) && soul.y < 242) soul.y += spd;
+        if ((Keys.a || Keys.ArrowLeft) && soul.x > 8) soul.x -= spd;
+        if ((Keys.d || Keys.ArrowRight) && soul.x < 242) soul.x += spd;
+
+        // Draw Soul
+        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--soul-green');
+        ctx.beginPath(); ctx.arc(soul.x, soul.y, 6, 0, Math.PI*2); ctx.fill();
+
+        // Bullets
+        spawnBullet();
+        
+        ctx.fillStyle = 'white';
+        for (let i = bullets.length - 1; i >= 0; i--) {
+            let b = bullets[i];
+            b.x += b.vx; b.y += b.vy;
+            
+            ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI*2); ctx.fill();
+
+            // Collision
+            let dx = soul.x - b.x; let dy = soul.y - b.y;
+            if (dx*dx + dy*dy < 64) { // Hit
+                bullets.splice(i, 1);
+                takeDamage();
+            } else if (b.y > 260 || b.x > 260 || b.x < -10) {
+                bullets.splice(i, 1);
+            }
+        }
+
+        // Borders
+        ctx.strokeStyle = 'white'; ctx.lineWidth = 4; ctx.strokeRect(0,0,250,250);
+
+        frame++;
+        if (frame < maxFrames && Game.hp > 0) {
+            Game.loopId = requestAnimationFrame(loop);
+        } else {
+            endDodge();
+        }
+    }
+
+    if (Game.loopId) cancelAnimationFrame(Game.loopId);
+    loop();
+}
+
+function takeDamage() {
+    AudioSys.playSFX('hit');
+    Game.hp -= 2;
+    updateHUD();
+    document.getElementById('game-stage').classList.add('shake');
+    setTimeout(() => document.getElementById('game-stage').classList.remove('shake'), 400);
+
+    if (Game.hp <= 0) {
+        cancelAnimationFrame(Game.loopId);
+        Game.state = 'gameover';
+        UI.bulletCanvas.style.display = 'none';
+        UI.mobileControls.style.display = 'none';
+        Typing.queue(["Your resolve shattered...", "Don't give up."], () => location.reload());
+    }
+}
+
+function endDodge() {
+    cancelAnimationFrame(Game.loopId);
+    UI.bulletCanvas.style.display = 'none';
+    UI.mobileControls.style.display = 'none';
+    
+    if (Game.state !== 'gameover') {
+        showMenu();
+    }
+}
+
+function winGame() {
+    Game.state = 'gameover';
+    UI.mainMenu.style.display = 'none';
+    UI.actMenu.style.display = 'none';
+    UI.echo.style.opacity = 0.5;
+    UI.echo.classList.remove('echo-glitch');
+    
+    Typing.queue([
+        "The Echo stops fighting.",
+        "It steps into the mirror, merging with you.",
+        "You are whole.",
+        "YOU WON."
+    ]);
+}
+
+function updateHUD() {
+    const pct = Math.max(0, (Game.hp / Game.maxHp) * 100);
+    UI.hpFill.style.width = pct + '%';
+    UI.hpText.innerText = Math.max(0, Game.hp) + "/" + Game.maxHp;
+
+    const ePct = Math.max(0, Game.enemyHp);
+    UI.enemyFill.style.width = ePct + '%';
+}
+
+// --- TYPING ENGINE ---
+const Typing = {
+    queueData: [],
+    callback: null,
+    isBusy: false,
+    interval: null,
+
+    queue(lines, onComplete) {
+        this.queueData = lines;
+        this.callback = onComplete;
+        Game.state = 'dialogue';
+        this.next();
+    },
+
+    next() {
+        if (this.queueData.length === 0) {
+            this.isBusy = false;
+            if (this.callback) this.callback();
+            return;
+        }
+
+        const item = this.queueData.shift();
+        
+        // If function, execute and next
+        if (typeof item === 'function') {
+            item();
+            this.next();
+            return;
+        }
+
+        // Text
+        this.isBusy = true;
+        UI.writer.innerHTML = "";
+        let i = 0;
+        clearInterval(this.interval);
+        
+        this.interval = setInterval(() => {
+            UI.writer.innerHTML += item.charAt(i);
+            if (item.charAt(i) !== ' ') AudioSys.playTone(200, 'triangle', 0.05, 0.05);
+            i++;
+            if (i >= item.length) this.finish();
+        }, Game.textSpeed);
+    },
+
+    finish() {
+        clearInterval(this.interval);
+        // Fill remaining text if clicked early would go here, 
+        // but for now we just stop typing state
+        this.isBusy = false;
+    }
+};
+
+// --- BG PARTICLES ---
+(function() {
+    const cvs = document.getElementById('bg-canvas');
+    const ctx = cvs.getContext('2d');
+    let parts = Array.from({length:40}, () => ({
+        x: Math.random()*800, y: Math.random()*600,
+        s: Math.random()*15, v: Math.random()*0.5 + 0.1
+    }));
+
+    function anim() {
+        ctx.clearRect(0,0,800,600);
+        ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
+        parts.forEach(p => {
+            p.y -= p.v;
+            if (p.y < -20) p.y = 620;
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p.x+p.s, p.y+p.s/2); 
+            ctx.lineTo(p.x+p.s/2, p.y+p.s);
+            ctx.fill();
+        });
+        requestAnimationFrame(anim);
+    }
+    anim();
+})();
+
+</script>
+</body>
+</html>
