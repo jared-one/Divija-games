@@ -2,799 +2,639 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Divija: The Architect of Soul [Definitive Edition]</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DIVIJA: SYSTEM REBOOT</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,500&family=VT323&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,600&family=VT323&display=swap');
 
         :root {
-            --bg-color: #050505;
-            --heart-color: #ff3e3e;
-            --soul-color: #00f3ff;
-            --gold-color: #ffd700;
-            --text-shadow: 2px 2px 0px #000;
+            --bg: #050505;
+            --heart: #ff3e3e;
+            --soul: #00f3ff;
+            --gold: #ffd700;
         }
 
         body {
             margin: 0;
             background: #000;
             height: 100vh;
+            width: 100vw;
             display: flex;
             justify-content: center;
             align-items: center;
             font-family: 'VT323', monospace;
             overflow: hidden;
             user-select: none;
+            -webkit-user-select: none;
+            color: white;
         }
 
-        /* --- THE CABIN (Game Container) --- */
-        #game-cabinet {
+        /* --- CRT FRAME --- */
+        #crt-frame {
             position: relative;
-            width: 900px;
-            height: 650px;
-            background: #000;
-            box-shadow: 0 0 80px rgba(0, 243, 255, 0.15);
-            border-radius: 4px;
-            overflow: hidden;
-            transform: translateZ(0); /* GPU acceleration */
-        }
-
-        canvas {
-            display: block;
             width: 100%;
             height: 100%;
-            image-rendering: pixelated;
+            max-width: 900px;
+            max-height: 650px;
+            background: #000;
+            border: 2px solid #222;
+            box-shadow: 0 0 50px rgba(0, 243, 255, 0.1);
+            overflow: hidden;
         }
 
-        /* --- CRT FILTERS --- */
+        canvas { display: block; width: 100%; height: 100%; }
+
+        /* --- UI OVERLAYS --- */
         .scanlines {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
                         linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            background-size: 100% 3px, 3px 100%;
-            pointer-events: none; z-index: 100;
+            background-size: 100% 3px, 3px 100%; pointer-events: none; z-index: 10;
         }
         
-        .vignette {
+        .ui-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,1) 100%);
-            pointer-events: none; z-index: 101;
-        }
-
-        .screen-glitch {
-            animation: glitch-anim 0.2s infinite;
-            display: none;
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255, 255, 255, 0.1);
-            pointer-events: none; z-index: 99;
-        }
-
-        /* --- UI OVERLAY --- */
-        #ui-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 50;
+            pointer-events: none; z-index: 20; padding: 20px; box-sizing: border-box;
             display: flex; flex-direction: column; justify-content: space-between;
-            padding: 20px; box-sizing: border-box;
-            font-size: 24px; color: white;
-            text-shadow: var(--text-shadow);
         }
 
-        .bar-wrap { display: flex; align-items: center; margin-bottom: 5px; }
-        .bar-label { width: 80px; color: var(--gold-color); }
-        .bar-border { width: 200px; height: 15px; border: 2px solid white; background: #222; position: relative; }
-        .bar-fill { height: 100%; transition: width 0.2s; }
-        #hp-fill { background: var(--heart-color); width: 100%; }
-        #resolve-fill { background: var(--soul-color); width: 0%; }
-        #boss-hud { opacity: 0; transition: opacity 1s; text-align: right; position: absolute; top: 20px; right: 20px; }
-        
-        /* --- DIALOGUE BOX --- */
+        /* --- HUD --- */
+        #hud { opacity: 0; transition: opacity 1s; }
+        .bar-container { display: flex; align-items: center; margin-bottom: 8px; }
+        .bar-label { width: 70px; color: var(--gold); font-size: 20px; }
+        .bar-border { width: 150px; height: 12px; border: 2px solid white; background: #222; }
+        .bar-fill { height: 100%; transition: width 0.1s linear; }
+
+        /* --- DIALOGUE --- */
         #dialogue-box {
             position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            width: 90%; height: 180px;
-            background: rgba(0, 0, 0, 0.85);
-            border: 3px solid white;
-            padding: 20px; box-sizing: border-box;
-            display: none; pointer-events: auto;
-            z-index: 60;
+            width: 90%; min-height: 160px;
+            background: rgba(0, 0, 0, 0.9); border: 2px solid white;
+            padding: 15px; display: none; box-sizing: border-box; pointer-events: auto;
+        }
+        .portrait {
+            width: 100px; height: 100px; border: 1px solid #444; float: left; margin-right: 15px;
+            background: #111; display: flex; justify-content: center; align-items: center;
+        }
+        .text-content {
+            margin-left: 120px; font-family: 'Cormorant Garamond', serif;
+            font-size: 26px; line-height: 1.2; white-space: pre-wrap; /* Fixes spacing */
+        }
+        .speaker { color: var(--soul); font-family: 'VT323'; font-size: 22px; margin-bottom: 5px; text-transform: uppercase; }
+        .next-btn { 
+            position: absolute; bottom: 10px; right: 15px; font-family: 'VT323'; 
+            color: #888; animation: blink 1s infinite; font-size: 18px; 
         }
 
-        .portrait-area {
-            width: 130px; height: 130px; float: left; margin-right: 20px;
-            border: 2px solid #555; background: #000;
-            position: relative; overflow: hidden;
-        }
-        
-        #portrait-canvas { width: 100%; height: 100%; }
-
-        .text-area {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 28px; line-height: 1.2; color: #eee;
-            margin-left: 150px; height: 100%; position: relative;
-        }
-        
-        .speaker-name {
-            font-family: 'VT323', monospace; color: var(--soul-color);
-            font-size: 24px; text-transform: uppercase; margin-bottom: 5px; border-bottom: 1px solid #333; display: inline-block;
-        }
-
-        .next-indicator {
-            position: absolute; bottom: 0; right: 0;
-            font-family: 'VT323'; font-size: 20px; color: var(--gold-color);
-            animation: bounce 1s infinite; display: none;
-        }
-
-        /* --- SCREENS --- */
-        .screen-overlay {
+        /* --- INTRO & SCREENS --- */
+        .fullscreen-text {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; display: flex; flex-direction: column;
-            justify-content: center; align-items: center; z-index: 200;
-            transition: opacity 1s;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: #000; z-index: 50; transition: opacity 1s; pointer-events: auto;
         }
         .hidden { opacity: 0; pointer-events: none; }
-
-        h1 {
-            font-size: 80px; margin: 0; color: var(--soul-color);
-            text-shadow: 0 0 20px var(--soul-color); letter-spacing: 10px;
-        }
         
-        .subtitle { font-family: 'Cormorant Garamond', serif; font-size: 32px; color: #888; margin-bottom: 50px; }
-        
+        h1 { font-size: 60px; color: var(--soul); margin: 0; text-shadow: 0 0 15px var(--soul); }
         button {
-            background: transparent; border: 2px solid white; color: white;
-            font-family: 'VT323'; font-size: 30px; padding: 15px 50px;
-            cursor: pointer; transition: 0.3s; text-transform: uppercase;
-        }
-        button:hover { background: white; color: black; box-shadow: 0 0 20px white; }
-
-        /* --- CHAPTER CARD --- */
-        #chapter-card {
-            background: black; z-index: 150;
-        }
-        .chap-num { color: var(--heart-color); font-size: 30px; letter-spacing: 5px; }
-        .chap-title { font-size: 60px; color: white; margin: 10px 0; font-family: 'Cormorant Garamond'; font-style: italic;}
-
-        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-        @keyframes glitch-anim { 
-            0% { transform: translate(0); } 
-            20% { transform: translate(-2px, 2px); } 
-            40% { transform: translate(-2px, -2px); } 
-            60% { transform: translate(2px, 2px); } 
-            80% { transform: translate(2px, -2px); } 
-            100% { transform: translate(0); } 
+            margin-top: 30px; background: transparent; color: white; border: 2px solid white;
+            font-family: 'VT323'; font-size: 24px; padding: 10px 40px; cursor: pointer;
         }
 
+        /* --- MOBILE CONTROLS --- */
+        #touch-controls {
+            display: none; position: absolute; bottom: 20px; left: 0; width: 100%; height: 150px;
+            pointer-events: none; z-index: 100;
+        }
+        .dpad { position: absolute; bottom: 20px; left: 20px; width: 150px; height: 150px; pointer-events: auto; }
+        .action-pad { position: absolute; bottom: 20px; right: 20px; width: 120px; height: 120px; pointer-events: auto; }
+        
+        .touch-btn {
+            position: absolute; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%; backdrop-filter: blur(2px);
+        }
+        .touch-btn:active { background: rgba(255,255,255,0.4); }
+
+        /* DPAD Layout */
+        #btn-up { top: 0; left: 50px; width: 50px; height: 50px; }
+        #btn-down { bottom: 0; left: 50px; width: 50px; height: 50px; }
+        #btn-left { top: 50px; left: 0; width: 50px; height: 50px; }
+        #btn-right { top: 50px; right: 0; width: 50px; height: 50px; }
+        
+        /* Actions */
+        #btn-z { bottom: 10px; right: 70px; width: 60px; height: 60px; background: rgba(255, 62, 62, 0.2); }
+        #btn-x { bottom: 50px; right: 0; width: 50px; height: 50px; background: rgba(0, 243, 255, 0.2); }
+
+        /* Media Query for Mobile */
+        @media (max-width: 900px) {
+            #touch-controls { display: block; }
+            #game-cabinet { width: 100%; height: 100%; border: none; }
+        }
+
+        @keyframes blink { 50% { opacity: 0; } }
     </style>
 </head>
 <body>
 
-<div id="game-cabinet">
-    <canvas id="gameCanvas"></canvas>
+<div id="crt-frame">
+    <canvas id="canvas"></canvas>
     <div class="scanlines"></div>
-    <div class="vignette"></div>
-    <div class="screen-glitch" id="glitch-layer"></div>
 
-    <!-- UI -->
-    <div id="ui-layer">
-        <div style="display: flex; justify-content: space-between;">
-            <div>
-                <div class="bar-wrap">
-                    <span class="bar-label">DIVIJA</span>
-                    <div class="bar-border"><div class="bar-fill" id="hp-fill"></div></div>
-                </div>
-                <div class="bar-wrap">
-                    <span class="bar-label">RESOLVE</span>
-                    <div class="bar-border" style="border-color: var(--soul-color);"><div class="bar-fill" id="resolve-fill"></div></div>
-                </div>
+    <!-- TOUCH CONTROLS (Mobile Only) -->
+    <div id="touch-controls">
+        <div class="dpad">
+            <div id="btn-up" class="touch-btn"></div>
+            <div id="btn-down" class="touch-btn"></div>
+            <div id="btn-left" class="touch-btn"></div>
+            <div id="btn-right" class="touch-btn"></div>
+        </div>
+        <div class="action-pad">
+            <div id="btn-z" class="touch-btn"></div> <!-- Shoot / Talk -->
+            <div id="btn-x" class="touch-btn"></div> <!-- Bomb -->
+        </div>
+    </div>
+
+    <!-- UI LAYER -->
+    <div class="ui-layer">
+        <div id="hud">
+            <div class="bar-container">
+                <span class="bar-label">HP</span>
+                <div class="bar-border"><div class="bar-fill" id="hp-bar" style="background:var(--heart); width:100%"></div></div>
             </div>
-            <div id="boss-hud">
-                <div class="bar-wrap" style="flex-direction: row-reverse;">
-                    <span class="bar-label" style="text-align: right; width: auto; margin-left: 10px;" id="boss-name">THE ECHO</span>
-                    <div class="bar-border" style="width: 300px; border-color: var(--heart-color);"><div class="bar-fill" id="boss-fill" style="background: var(--heart-color);"></div></div>
-                </div>
+            <div class="bar-container">
+                <span class="bar-label">MP</span>
+                <div class="bar-border"><div class="bar-fill" id="mp-bar" style="background:var(--soul); width:0%"></div></div>
             </div>
         </div>
 
         <div id="dialogue-box">
-            <div class="portrait-area">
-                <canvas id="portrait-canvas" width="130" height="130"></canvas>
-            </div>
-            <div class="text-area">
-                <div class="speaker-name" id="speaker-name">UNKNOWN</div>
+            <div class="portrait"><canvas id="p-canvas" width="100" height="100"></canvas></div>
+            <div class="text-content">
+                <div class="speaker" id="speaker-name">UNKNOWN</div>
                 <div id="dialogue-text"></div>
-                <div class="next-indicator">[Z] CONTINUE</div>
             </div>
+            <div class="next-btn">[Z] CONTINUE</div>
         </div>
     </div>
 
-    <!-- START SCREEN -->
-    <div id="start-screen" class="screen-overlay">
-        <h1>DIVIJA</h1>
-        <div class="subtitle">THE ARCHITECT OF SOUL</div>
-        <button id="btn-start">INITIALIZE</button>
-        <div style="margin-top: 30px; color: #666; font-size: 18px;">
-            ARROWS to Move • SHIFT to Focus • Z to Interact • X to Burst
+    <!-- SCREENS -->
+    <div id="intro-screen" class="fullscreen-text">
+        <h1 style="font-size: 80px;">DIVIJA</h1>
+        <p style="color:#888; font-size: 24px; letter-spacing: 5px; margin-bottom: 40px;">CALCULUS OF THE HEART</p>
+        <button id="start-btn">BOOT SYSTEM</button>
+        <div style="margin-top: 20px; font-size: 16px; color: #666;">
+            [WASD / ARROWS] Move • [Z] Interact/Shoot • [X] Bomb
         </div>
     </div>
 
-    <!-- CHAPTER CARD -->
-    <div id="chapter-card" class="screen-overlay hidden">
-        <div class="chap-num" id="chap-num">CHAPTER I</div>
-        <div class="chap-title" id="chap-title">THE ECHO</div>
-        <div style="color:#888" id="chap-sub">"Who are you when no one is watching?"</div>
+    <div id="game-over" class="fullscreen-text hidden">
+        <h1 style="color:#666">SYSTEM FAILURE</h1>
+        <p>The heart stopped, but the memory remains.</p>
+        <button id="retry-btn">REBOOT</button>
     </div>
 
-    <!-- GAME OVER -->
-    <div id="game-over" class="screen-overlay hidden">
-        <h1 style="color: #666; font-size: 60px;">FADING...</h1>
-        <div class="subtitle">"It's okay to rest. But please get back up."</div>
-        <button id="btn-retry">REFUSE TO YIELD</button>
-    </div>
-
-    <!-- VICTORY -->
-    <div id="victory-screen" class="screen-overlay hidden">
-        <h1 style="color: var(--gold-color)">COMPLETED</h1>
-        <div style="text-align: center; max-width: 700px; font-family: 'Cormorant Garamond'; font-size: 26px; line-height: 1.4;">
-            <p>You have faced the Echo, the Crowd, the Clock, and the Memory.</p>
-            <p>You have integrated the shadows into the self.</p>
-            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #333;">
-                <p style="font-size: 32px; color: var(--soul-color);">Happy Birthday, Divija.</p>
-                <p style="font-size: 20px; color: #888;">The world is lucky to have your light.</p>
-                <p style="font-size: 20px; color: #888;">- Daddy</p>
-            </div>
+    <div id="victory-screen" class="fullscreen-text hidden">
+        <h1 style="color:var(--gold)">INTEGRATION COMPLETE</h1>
+        <div style="text-align: center; max-width: 600px; font-family: 'Cormorant Garamond'; font-size: 24px;">
+            <p>You have compiled the fragments of your soul.</p>
+            <p>You are whole.</p>
+            <br>
+            <p style="color: var(--heart); font-size: 30px;">Happy Birthday, Divija.</p>
+            <p>- Daddy</p>
         </div>
-        <button id="btn-reset" style="margin-top: 30px;">Restart Journey</button>
+        <button onclick="location.reload()">SLEEP</button>
     </div>
 </div>
 
 <script>
-/**
- * ENGINE: ETHER_CORE v9.0
- * Specialized for High-Fidelity Canvas Rendering & Narrative Sequencing
- */
+/* 
+    ETHER_CORE v10 - The Masterpiece Edition
+    Features: 
+    - Vector Cinematic Engine
+    - Universal Input (Touch + Keyboard)
+    - Typewriter v2 (Space-Preserving)
+*/
 
-const CVS = document.getElementById('gameCanvas');
-const CTX = CVS.getContext('2d');
-const P_CVS = document.getElementById('portrait-canvas');
-const P_CTX = P_CVS.getContext('2d');
+const CANVAS = document.getElementById('canvas');
+const CTX = CANVAS.getContext('2d');
+const P_CTX = document.getElementById('p-canvas').getContext('2d');
 
-const W = 900;
-const H = 650;
-CVS.width = W; CVS.height = H;
+let W = 900;
+let H = 650;
 
-// --- CONFIGURATION & STATE ---
-const STATE = {
-    screen: 'START', // START, CHAPTER, DIALOGUE, COMBAT, GAMEOVER, VICTORY
-    tick: 0,
-    chapter: 0,
-    shake: 0,
-    glitch: 0,
-    colors: {
-        bg: '#050505',
-        player: '#ff3e3e',
-        soul: '#00f3ff',
-        enemy: '#ffffff',
-        echo: '#a0a0a0',
-        crowd: '#ff00ff',
-        clock: '#ffd700',
-        memory: '#ff9900'
+function resize() {
+    W = CANVAS.width = CANVAS.offsetWidth;
+    H = CANVAS.height = CANVAS.offsetHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// --- INPUT SYSTEM ---
+const Input = {
+    keys: {},
+    touch: { up: false, down: false, left: false, right: false, z: false, x: false },
+    
+    init() {
+        // Keyboard
+        window.addEventListener('keydown', e => this.keys[e.code] = true);
+        window.addEventListener('keyup', e => {
+            this.keys[e.code] = false;
+            if(e.code === 'KeyZ' || e.code === 'Enter') Game.handleInteraction();
+        });
+
+        // Touch Mapping
+        const bind = (id, key) => {
+            const el = document.getElementById(id);
+            el.addEventListener('touchstart', (e) => { e.preventDefault(); this.touch[key] = true; });
+            el.addEventListener('touchend', (e) => { e.preventDefault(); this.touch[key] = false; });
+            // Add click for "Z" interaction on dialogue
+            if(key === 'z') {
+                el.addEventListener('touchstart', () => Game.handleInteraction());
+            }
+        };
+
+        bind('btn-up', 'up'); bind('btn-down', 'down');
+        bind('btn-left', 'left'); bind('btn-right', 'right');
+        bind('btn-z', 'z'); bind('btn-x', 'x');
+    },
+
+    isDown(action) {
+        if(action === 'up') return this.keys['ArrowUp'] || this.keys['KeyW'] || this.touch.up;
+        if(action === 'down') return this.keys['ArrowDown'] || this.keys['KeyS'] || this.touch.down;
+        if(action === 'left') return this.keys['ArrowLeft'] || this.keys['KeyA'] || this.touch.left;
+        if(action === 'right') return this.keys['ArrowRight'] || this.keys['KeyD'] || this.touch.right;
+        if(action === 'fire') return this.keys['KeyZ'] || this.keys['Enter'] || this.touch.z;
+        if(action === 'bomb') return this.keys['KeyX'] || this.keys['ShiftLeft'] || this.touch.x;
+        return false;
     }
 };
 
-const INPUT = { up:false, down:false, left:false, right:false, z:false, x:false, shift:false, z_press: false };
-
-// --- AUDIO SYNTHESIS (No external files) ---
-const AudioEngine = {
+// --- AUDIO SYNTH (Procedural) ---
+const AudioMan = {
     ctx: null,
     init() { window.AudioContext = window.AudioContext || window.webkitAudioContext; this.ctx = new AudioContext(); },
-    playTone(freq, type, duration, vol=0.1) {
+    play(freq, type, dur, vol=0.1) {
         if(!this.ctx) return;
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
         osc.type = type;
         osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
         gain.gain.setValueAtTime(vol, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + dur);
         osc.connect(gain); gain.connect(this.ctx.destination);
-        osc.start(); osc.stop(this.ctx.currentTime + duration);
+        osc.start(); osc.stop(this.ctx.currentTime + dur);
     },
-    sfx(name) {
-        if(name === 'text') this.playTone(800 + Math.random()*200, 'sine', 0.05, 0.02);
-        if(name === 'shoot') this.playTone(400, 'triangle', 0.1, 0.05);
-        if(name === 'hit') { this.playTone(100, 'sawtooth', 0.3, 0.1); STATE.shake = 10; STATE.glitch = 5; }
-        if(name === 'graze') this.playTone(1200, 'sine', 0.1, 0.05);
-        if(name === 'burst') { 
-            this.playTone(100, 'square', 1.0, 0.2); 
-            setTimeout(()=>this.playTone(200, 'square', 1.0, 0.2), 100);
-        }
-    },
-    musicNote(n) {
-        // Simple ambient generative music
-        const scale = [261.63, 293.66, 311.13, 349.23, 392.00, 415.30, 466.16]; // Cm scale
-        const freq = scale[Math.floor(Math.random()*scale.length)] * (Math.random()>0.8?0.5:1);
-        this.playTone(freq, 'sine', 2.0, 0.03);
+    sfx(id) {
+        if(id === 'text') this.play(800 + Math.random()*200, 'sine', 0.05, 0.02);
+        if(id === 'shoot') this.play(300, 'triangle', 0.1, 0.05);
+        if(id === 'hit') { this.play(100, 'sawtooth', 0.3, 0.2); Game.shake = 10; }
+        if(id === 'intro_fall') this.play(100 - (Game.tick%50), 'sawtooth', 0.1, 0.05);
     }
 };
 
-// --- GRAPHICS PROCEDURAL GENERATION ---
-const Art = {
-    player(ctx, x, y, r, focus) {
-        ctx.fillStyle = STATE.colors.player;
-        if(focus) {
-            ctx.shadowBlur = 10; ctx.shadowColor = STATE.colors.soul;
-        }
-        // Heart Shape
-        ctx.beginPath();
-        const topCurveHeight = r * 0.3;
-        ctx.moveTo(x, y + r * 0.2);
-        ctx.bezierCurveTo(x, y - r * 0.5, x - r, y - r * 0.5, x - r, y - r * 0.1);
-        ctx.bezierCurveTo(x - r, y + r * 0.6, x, y + r * 1.1, x, y + r * 1.5);
-        ctx.bezierCurveTo(x, y + r * 1.1, x + r, y + r * 0.6, x + r, y - r * 0.1);
-        ctx.bezierCurveTo(x + r, y - r * 0.5, x, y - r * 0.5, x, y + r * 0.2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
-        
-        // Soul Core
-        if(focus) {
-            ctx.fillStyle = STATE.colors.soul;
-            ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI*2); ctx.fill();
-        }
-    },
+// --- CINEMATIC ENGINE ---
+const Cinematic = {
+    active: false,
+    phase: 0,
+    timer: 0,
+    yPos: 0,
     
-    // Draw portraits dynamically on the portrait canvas
-    portrait(type) {
-        P_CTX.clearRect(0,0,130,130);
-        const cx = 65, cy = 65;
-        P_CTX.save();
-        
-        if(type === 'divija') {
-            P_CTX.fillStyle = STATE.colors.player;
-            P_CTX.beginPath(); P_CTX.arc(cx, cy, 40, 0, Math.PI*2); P_CTX.fill();
-            P_CTX.fillStyle = "#fff";
-            P_CTX.font = "40px Arial"; P_CTX.fillText("♥", cx-15, cy+15);
-        }
-        else if(type === 'echo') {
-            P_CTX.strokeStyle = STATE.colors.echo; P_CTX.lineWidth = 3;
-            P_CTX.beginPath(); P_CTX.moveTo(cx-30, cy-30); P_CTX.lineTo(cx+30, cy+30); P_CTX.stroke();
-            P_CTX.beginPath(); P_CTX.moveTo(cx+30, cy-30); P_CTX.lineTo(cx-30, cy+30); P_CTX.stroke();
-            P_CTX.globalAlpha = 0.5;
-            P_CTX.beginPath(); P_CTX.arc(cx, cy, 40, 0, Math.PI*2); P_CTX.stroke();
-        }
-        else if(type === 'crowd') {
-            P_CTX.fillStyle = STATE.colors.crowd;
-            for(let i=0; i<5; i++) {
-                P_CTX.beginPath();
-                P_CTX.arc(cx + Math.cos(i)*30, cy + Math.sin(i)*20, 10, 0, Math.PI*2);
-                P_CTX.fill();
-            }
-        }
-        else if(type === 'clock') {
-            P_CTX.strokeStyle = STATE.colors.clock; P_CTX.lineWidth=4;
-            P_CTX.beginPath(); P_CTX.arc(cx, cy, 45, 0, Math.PI*2); P_CTX.stroke();
-            P_CTX.beginPath(); P_CTX.moveTo(cx, cy); P_CTX.lineTo(cx, cy-35); P_CTX.stroke();
-            P_CTX.beginPath(); P_CTX.moveTo(cx, cy); P_CTX.lineTo(cx+20, cy); P_CTX.stroke();
-        }
-        else if(type === 'memory') {
-            P_CTX.fillStyle = STATE.colors.memory;
-            P_CTX.shadowBlur = 20; P_CTX.shadowColor = STATE.colors.memory;
-            P_CTX.beginPath(); P_CTX.arc(cx, cy, 30, 0, Math.PI*2); P_CTX.fill();
-        }
-        else { // Unknown
-            P_CTX.fillStyle = "#333"; P_CTX.font = "60px monospace"; P_CTX.fillText("?", cx-15, cy+20);
-        }
-        P_CTX.restore();
-    }
-};
-
-// --- GAME ENTITIES ---
-class Player {
-    constructor() {
-        this.x = W/2; this.y = H - 100;
-        this.hp = 20; this.maxHp = 20;
-        this.resolve = 0;
-        this.invuln = 0;
-        this.r = 12; // Visual radius
-        this.hitR = 3; // Hitbox
-    }
-    update() {
-        const spd = INPUT.shift ? 3 : 6;
-        if(INPUT.left) this.x -= spd;
-        if(INPUT.right) this.x += spd;
-        if(INPUT.up) this.y -= spd;
-        if(INPUT.down) this.y += spd;
-        
-        // Boundaries
-        this.x = Math.max(20, Math.min(W-20, this.x));
-        this.y = Math.max(20, Math.min(H-20, this.y));
-
-        if(this.invuln > 0) this.invuln--;
-
-        // Shooting
-        if(INPUT.z && STATE.tick % 5 === 0) {
-            Bullets.push(new Bullet(this.x, this.y - 10, -Math.PI/2, 15, 'player'));
-            AudioEngine.sfx('shoot');
-        }
-
-        // Burst (Bomb)
-        if(INPUT.x && this.resolve >= 100) {
-            this.resolve = 0;
-            Bullets = Bullets.filter(b => b.type === 'player'); // Clear enemy bullets
-            AudioEngine.sfx('burst');
-            STATE.glitch = 10;
-            // Damage boss
-            if(Boss.active) Boss.hp -= 50;
-        }
-    }
-    draw() {
-        if(this.invuln > 0 && Math.floor(STATE.tick/4)%2 === 0) return;
-        Art.player(CTX, this.x, this.y, this.r, INPUT.shift);
-    }
-}
-
-class Bullet {
-    constructor(x, y, ang, spd, type, color='#fff') {
-        this.x = x; this.y = y;
-        this.vx = Math.cos(ang) * spd;
-        this.vy = Math.sin(ang) * spd;
-        this.type = type;
-        this.color = color;
-        this.grazed = false;
+    start() {
         this.active = true;
-    }
-    update() {
-        this.x += this.vx; this.y += this.vy;
-        if(this.x < -50 || this.x > W+50 || this.y < -50 || this.y > H+50) this.active = false;
-    }
-    draw() {
-        CTX.fillStyle = this.color;
-        CTX.beginPath();
-        if(this.type === 'player') CTX.fillRect(this.x-2, this.y-8, 4, 16);
-        else CTX.arc(this.x, this.y, 6, 0, Math.PI*2);
-        CTX.fill();
-    }
-}
-
-// --- BOSS LOGIC & PATTERNS ---
-const Boss = {
-    x: W/2, y: 150, hp: 500, maxHp: 500, active: false, phase: 0, type: '',
-    init(type, hp) {
-        this.type = type; this.maxHp = hp; this.hp = hp; this.active = true; this.phase = 0;
-        document.getElementById('boss-hud').style.opacity = 1;
-        document.getElementById('boss-name').innerText = type.toUpperCase();
+        this.phase = 0;
+        this.timer = 0;
+        this.yPos = -100;
+        document.getElementById('intro-screen').classList.add('hidden');
     },
+
     update() {
-        if(!this.active) return;
+        this.timer++;
         
-        // Movement: gentle hover
-        this.y = 150 + Math.sin(STATE.tick * 0.02) * 20;
-        this.x = W/2 + Math.cos(STATE.tick * 0.01) * 50;
-
-        // Patterns based on Type
-        const t = STATE.tick;
-        
-        if(this.type === 'echo') { // Pattern: Rain & Reflection
-            if(t % 8 === 0) {
-                Bullets.push(new Bullet(Math.random()*W, 0, Math.PI/2, 4, 'enemy', STATE.colors.echo));
-            }
-            if(t % 60 === 0) { // Aimed shot
-                const ang = Math.atan2(Player1.y - this.y, Player1.x - this.x);
-                Bullets.push(new Bullet(this.x, this.y, ang, 6, 'enemy', '#fff'));
+        // Phase 1: The Glitch Screen
+        if(this.phase === 0) {
+            if(this.timer > 120) { this.phase = 1; this.timer = 0; }
+        }
+        // Phase 2: The Fall
+        else if(this.phase === 1) {
+            this.yPos += 5;
+            if(this.timer % 10 === 0) AudioMan.sfx('intro_fall');
+            if(this.timer > 300) { this.phase = 2; this.timer = 0; }
+        }
+        // Phase 3: The Landing
+        else if(this.phase === 2) {
+            if(this.timer > 100) {
+                this.active = false;
+                Game.startScript();
             }
         }
-        else if(this.type === 'crowd') { // Pattern: Enclosure & Judgment
-            if(t % 20 === 0) {
-                const branches = 8;
-                for(let i=0; i<branches; i++) {
-                    const ang = (t/50) + (Math.PI*2/branches)*i;
-                    Bullets.push(new Bullet(this.x, this.y, ang, 4, 'enemy', STATE.colors.crowd));
-                }
-            }
-        }
-        else if(this.type === 'clock') { // Pattern: Spirals & Time
-            if(t % 4 === 0) {
-                const ang = t * 0.1;
-                Bullets.push(new Bullet(this.x, this.y, ang, 5, 'enemy', STATE.colors.clock));
-                Bullets.push(new Bullet(this.x, this.y, ang + Math.PI, 5, 'enemy', STATE.colors.clock));
-            }
-        }
-        else if(this.type === 'memory') { // Pattern: Warmth (Dense but slow)
-            if(t % 10 === 0) {
-                for(let i=0; i<5; i++) {
-                    const ang = Math.random() * Math.PI * 2;
-                    Bullets.push(new Bullet(this.x, this.y, ang, 2 + Math.random(), 'enemy', STATE.colors.memory));
-                }
-            }
-        }
-
-        // Hit Detection (Player bullets hitting Boss)
-        Bullets.forEach(b => {
-            if(b.type === 'player' && b.active) {
-                const d = Math.hypot(b.x - this.x, b.y - this.y);
-                if(d < 60) {
-                    b.active = false;
-                    this.hp -= 1;
-                    if(this.hp <= 0) this.active = false;
-                }
-            }
-        });
     },
-    draw() {
-        if(!this.active) return;
-        CTX.save();
-        CTX.translate(this.x, this.y);
-        
-        // Draw boss avatar based on type
-        if(this.type === 'echo') {
-            CTX.strokeStyle = STATE.colors.echo; CTX.lineWidth = 4;
-            CTX.beginPath(); CTX.moveTo(-40,-40); CTX.lineTo(40,40); CTX.stroke();
-            CTX.beginPath(); CTX.moveTo(40,-40); CTX.lineTo(-40,40); CTX.stroke();
-            CTX.strokeRect(-30, -30, 60, 60);
-        } else if (this.type === 'crowd') {
-            CTX.fillStyle = STATE.colors.crowd;
-            CTX.beginPath(); CTX.arc(0,0,50,0,Math.PI*2); CTX.fill();
-            CTX.fillStyle = '#000'; // Eyes
-            CTX.beginPath(); CTX.arc(-20,-10,10,0,Math.PI*2); CTX.fill();
-            CTX.beginPath(); CTX.arc(20,-10,10,0,Math.PI*2); CTX.fill();
-        } else if (this.type === 'clock') {
-             CTX.strokeStyle = STATE.colors.clock; CTX.lineWidth = 5;
-             CTX.beginPath(); CTX.arc(0,0,50,0,Math.PI*2); CTX.stroke();
-             CTX.rotate(STATE.tick * 0.05);
-             CTX.beginPath(); CTX.moveTo(0,0); CTX.lineTo(0,-40); CTX.stroke();
-        } else if (this.type === 'memory') {
-            CTX.shadowBlur = 30; CTX.shadowColor = STATE.colors.memory;
-            CTX.fillStyle = '#fff';
-            CTX.beginPath(); CTX.arc(0,0,40,0,Math.PI*2); CTX.fill();
-        }
 
-        CTX.restore();
+    draw(ctx) {
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0,0,W,H);
+
+        if(this.phase === 0) {
+            // Glitching Desktop
+            ctx.fillStyle = "#fff";
+            ctx.font = "20px VT323";
+            ctx.fillText("SYSTEM CRITICAL. EJECTING SOUL...", 50, H/2);
+            if(Math.random() > 0.8) ctx.fillRect(0, Math.random()*H, W, 20);
+        }
+        else if(this.phase === 1) {
+            // Matrix falling effect
+            ctx.fillStyle = "rgba(0, 243, 255, 0.2)";
+            for(let i=0; i<20; i++) {
+                ctx.fillText(Math.random() > 0.5 ? "1" : "0", Math.random()*W, (this.timer*10 + Math.random()*500) % H);
+            }
+            
+            // Falling Divija
+            const cx = W/2;
+            const cy = H/2;
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(this.timer * 0.05);
+            ctx.fillStyle = "#ff3e3e";
+            ctx.beginPath();
+            ctx.arc(0, 0, 20, 0, Math.PI*2);
+            ctx.fill();
+            // Trailing hair/scarf
+            ctx.strokeStyle = "#ff3e3e";
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(0,0);
+            ctx.bezierCurveTo(-50, -50, 50, -100, 0, -150);
+            ctx.stroke();
+            ctx.restore();
+        }
+        else if(this.phase === 2) {
+            // Fade to white then black
+            const alpha = 1 - (this.timer / 100);
+            ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+            ctx.fillRect(0,0,W,H);
+        }
     }
 };
 
-// --- STORY DATA (Based on Claude's excellent structure) ---
-const STORY = [
-    // CHAP 1
-    { type: 'chapter', num: 'I', title: 'THE ECHO', sub: 'The voice that sounds like yours.' },
-    { type: 'dialogue', speaker: 'narrator', text: 'You wake up in a space between heartbeats.' },
-    { type: 'dialogue', speaker: 'narrator', text: 'It is quiet. Too quiet.' },
-    { type: 'dialogue', speaker: 'echo', text: 'Oh. You are awake.', img: 'echo' },
-    { type: 'dialogue', speaker: 'divija', text: 'Who are you?', img: 'divija' },
-    { type: 'dialogue', speaker: 'echo', text: 'I am the one who remembers every mistake.', img: 'echo' },
-    { type: 'dialogue', speaker: 'divija', text: 'Go away.', img: 'divija' },
-    { type: 'dialogue', speaker: 'echo', text: 'I cannot. I am you.', img: 'echo' },
-    { type: 'fight', boss: 'echo', hp: 300 },
+// --- GAME LOGIC ---
+const Game = {
+    state: 'MENU', // MENU, INTRO, DIALOGUE, COMBAT, OVER, WIN
+    tick: 0,
+    shake: 0,
+    player: { x: 0, y: 0, hp: 20, maxHp: 20, mp: 0, r: 8, inv: 0 },
+    boss: { active: false, x:0, y:0, hp: 500, max: 500, type: 'echo' },
+    bullets: [],
     
-    // CHAP 2
-    { type: 'chapter', num: 'II', title: 'THE CROWD', sub: 'A thousand eyes that judge.' },
-    { type: 'dialogue', speaker: 'crowd', text: 'Look at her. Is she even trying?', img: 'crowd' },
-    { type: 'dialogue', speaker: 'divija', text: 'I can hear you.', img: 'divija' },
-    { type: 'dialogue', speaker: 'crowd', text: 'She thinks she is special. How average.', img: 'crowd' },
-    { type: 'dialogue', speaker: 'divija', text: 'I am not performing for you anymore.', img: 'divija' },
-    { type: 'fight', boss: 'crowd', hp: 400 },
-
-    // CHAP 3
-    { type: 'chapter', num: 'III', title: 'THE CLOCK', sub: 'Running out of time.' },
-    { type: 'dialogue', speaker: 'clock', text: 'TICK TOCK. You are behind schedule.', img: 'clock' },
-    { type: 'dialogue', speaker: 'divija', text: 'Behind whose schedule?', img: 'divija' },
-    { type: 'dialogue', speaker: 'clock', text: 'Everyone else is ahead. You are failing.', img: 'clock' },
-    { type: 'dialogue', speaker: 'divija', text: 'Life is not a race. It is a garden.', img: 'divija' },
-    { type: 'fight', boss: 'clock', hp: 500 },
-
-    // CHAP 4
-    { type: 'chapter', num: 'IV', title: 'THE MEMORY', sub: 'The roots run deep.' },
-    { type: 'dialogue', speaker: 'narrator', text: 'The darkness softens into a warm gold light.' },
-    { type: 'dialogue', speaker: 'memory', text: 'Divija.', img: 'memory' },
-    { type: 'dialogue', speaker: 'divija', text: 'Dad?', img: 'divija' },
-    { type: 'dialogue', speaker: 'memory', text: 'I am the part of him you carry within.', img: 'memory' },
-    { type: 'dialogue', speaker: 'memory', text: 'You do not need to fight to be worthy.', img: 'memory' },
-    { type: 'dialogue', speaker: 'divija', text: 'But I have to be strong.', img: 'divija' },
-    { type: 'dialogue', speaker: 'memory', text: 'You already are. Strength is not hardness.', img: 'memory' },
-    { type: 'dialogue', speaker: 'memory', text: 'Strength is loving yourself when the world does not.', img: 'memory' },
-    { type: 'fight', boss: 'memory', hp: 600 }, // A "survival" phase really
-
-    // END
-    { type: 'victory' }
-];
-
-// --- MAIN LOOP & LOGIC ---
-let Player1 = new Player();
-let Bullets = [];
-let scriptIdx = 0;
-let charIdx = 0;
-let textTimer = null;
-let currentLine = "";
-
-function GameLoop() {
-    STATE.tick++;
+    script: [
+        { t:'text', s:'sys', txt:"INITIALIZING..." },
+        { t:'text', s:'sys', txt:"ERROR: User location unknown." },
+        { t:'text', s:'divija', txt:"Where... am I?" },
+        { t:'text', s:'divija', txt:"I was just looking at the screen, and then..." },
+        { t:'text', s:'echo', txt:"You fell. Just like you always do." },
+        { t:'text', s:'divija', txt:"Who said that?" },
+        { t:'text', s:'echo', txt:"I am the doubt in your chest. The 'what if'." },
+        { t:'combat', boss:'echo', hp:300 }, // Fight 1
+        { t:'text', s:'divija', txt:"I... I didn't run away." },
+        { t:'text', s:'echo', txt:"Not this time. But the Crowd is watching." },
+        { t:'combat', boss:'crowd', hp:400 }, // Fight 2
+        { t:'text', s:'crowd', txt:"She's trying too hard. Look at her." },
+        { t:'text', s:'divija', txt:"I'm not doing this for you!" },
+        { t:'text', s:'sys', txt:"WARNING: Chronological instability detected." },
+        { t:'combat', boss:'clock', hp:500 }, // Fight 3
+        { t:'text', s:'memory', txt:"Divija. Breathe." },
+        { t:'text', s:'divija', txt:"Dad? Is that you?" },
+        { t:'text', s:'memory', txt:"You are stronger than the noise. Come home." },
+        { t:'win' }
+    ],
+    sIdx: 0,
     
-    // Clear Screen
-    CTX.fillStyle = STATE.colors.bg;
-    CTX.fillRect(0,0,W,H);
+    // Typewriter Vars
+    textTimer: null,
+    currentStr: "",
+    charPos: 0,
+    waiting: false,
 
-    // Screen Shake & Glitch
-    if(STATE.shake > 0) {
-        CTX.save();
-        CTX.translate((Math.random()-0.5)*STATE.shake, (Math.random()-0.5)*STATE.shake);
-        STATE.shake *= 0.9;
-    }
-    if(STATE.glitch > 0) {
-        document.getElementById('glitch-layer').style.display = 'block';
-        STATE.glitch--;
-    } else {
-        document.getElementById('glitch-layer').style.display = 'none';
-    }
+    init() {
+        Input.init();
+        this.loop();
+    },
 
-    if(STATE.screen === 'COMBAT') {
-        Player1.update();
-        Player1.draw();
+    startIntro() {
+        this.state = 'INTRO';
+        AudioMan.init();
+        Cinematic.start();
+    },
+
+    startScript() {
+        this.state = 'DIALOGUE';
+        this.player.x = W/2; this.player.y = H - 100;
+        document.getElementById('hud').style.opacity = 1;
+        this.processStep();
+    },
+
+    processStep() {
+        if(this.sIdx >= this.script.length) return;
+        const s = this.script[this.sIdx];
         
-        Boss.update();
-        Boss.draw();
-
-        // Bullet Logic
-        for(let i=Bullets.length-1; i>=0; i--) {
-            let b = Bullets[i];
-            b.update();
-            b.draw();
-            
-            // Collision Player vs Enemy Bullet
-            if(b.type === 'enemy' && b.active) {
-                const dist = Math.hypot(b.x - Player1.x, b.y - Player1.y);
-                
-                // Graze
-                if(dist < 30 && !b.grazed) {
-                    b.grazed = true;
-                    Player1.resolve = Math.min(100, Player1.resolve + 5);
-                    AudioEngine.sfx('graze');
-                }
-                
-                // Hit
-                if(dist < Player1.hitR && Player1.invuln === 0) {
-                    Player1.hp--;
-                    Player1.invuln = 60;
-                    b.active = false;
-                    AudioEngine.sfx('hit');
-                    if(Player1.hp <= 0) SetState('GAMEOVER');
-                }
-            }
-            if(!b.active) Bullets.splice(i, 1);
+        if(s.t === 'text') {
+            this.state = 'DIALOGUE';
+            this.showDialogue(s.s, s.txt);
+        } else if (s.t === 'combat') {
+            this.state = 'COMBAT';
+            document.getElementById('dialogue-box').style.display = 'none';
+            this.boss.active = true;
+            this.boss.type = s.boss;
+            this.boss.max = s.hp;
+            this.boss.hp = s.hp;
+            this.boss.x = W/2; this.boss.y = 100;
+        } else if (s.t === 'win') {
+            this.state = 'WIN';
+            document.getElementById('victory-screen').classList.remove('hidden');
+            document.getElementById('hud').style.opacity = 0;
         }
+    },
+
+    showDialogue(speaker, text) {
+        const box = document.getElementById('dialogue-box');
+        box.style.display = 'block';
+        document.getElementById('speaker-name').innerText = speaker;
+        const txtEl = document.getElementById('dialogue-text');
+        txtEl.innerHTML = ""; // Clear
         
-        // Check Phase/Victory
-        if(!Boss.active) {
-             Bullets = []; // Clear screen
-             scriptIdx++;
-             ProcessScript();
-        }
+        // Draw Portrait
+        P_CTX.fillStyle = "#000"; P_CTX.fillRect(0,0,100,100);
+        if(speaker === 'divija') this.drawFace('#ff3e3e', true);
+        else if(speaker === 'echo') this.drawFace('#888', false);
+        else this.drawFace('#fff', false);
 
-        // Ambient Music
-        if(STATE.tick % 60 === 0) AudioEngine.musicNote();
+        this.currentStr = text;
+        this.charPos = 0;
+        this.waiting = false;
         
-        // UI Updates
-        document.getElementById('hp-fill').style.width = (Player1.hp/Player1.maxHp*100) + '%';
-        document.getElementById('resolve-fill').style.width = Player1.resolve + '%';
-        if(Boss.active) {
-            document.getElementById('boss-fill').style.width = (Boss.hp/Boss.maxHp*100) + '%';
-        }
-    }
-
-    if(STATE.shake > 0) CTX.restore();
-    requestAnimationFrame(GameLoop);
-}
-
-function SetState(s) {
-    STATE.screen = s;
-    document.querySelectorAll('.screen-overlay').forEach(el => el.classList.add('hidden'));
-    document.getElementById('dialogue-box').style.display = 'none';
-    document.getElementById('boss-hud').style.opacity = 0;
-
-    if(s === 'START') document.getElementById('start-screen').classList.remove('hidden');
-    if(s === 'GAMEOVER') document.getElementById('game-over').classList.remove('hidden');
-    if(s === 'VICTORY') document.getElementById('victory-screen').classList.remove('hidden');
-    if(s === 'CHAPTER') {
-        const d = STORY[scriptIdx];
-        document.getElementById('chap-num').innerText = 'CHAPTER ' + d.num;
-        document.getElementById('chap-title').innerText = d.title;
-        document.getElementById('chap-sub').innerText = d.sub;
-        const el = document.getElementById('chapter-card');
-        el.classList.remove('hidden');
-        setTimeout(() => {
-            el.classList.add('hidden');
-            scriptIdx++;
-            ProcessScript();
-        }, 4000);
-    }
-}
-
-function ProcessScript() {
-    if(scriptIdx >= STORY.length) return;
-    const step = STORY[scriptIdx];
-
-    if(step.type === 'chapter') {
-        SetState('CHAPTER');
-    }
-    else if(step.type === 'dialogue') {
-        STATE.screen = 'DIALOGUE';
-        document.getElementById('dialogue-box').style.display = 'block';
-        document.getElementById('speaker-name').innerText = step.speaker;
-        document.getElementById('speaker-name').style.color = STATE.colors[step.speaker] || '#fff';
-        document.getElementById('dialogue-text').innerText = '';
-        document.querySelector('.next-indicator').style.display = 'none';
-        
-        Art.portrait(step.img || 'unknown');
-        
-        currentLine = step.text;
-        charIdx = 0;
-        clearInterval(textTimer);
-        textTimer = setInterval(() => {
-            document.getElementById('dialogue-text').innerText += currentLine[charIdx];
-            charIdx++;
-            if(charIdx % 3 === 0) AudioEngine.sfx('text');
-            if(charIdx >= currentLine.length) {
-                clearInterval(textTimer);
-                document.querySelector('.next-indicator').style.display = 'block';
+        clearInterval(this.textTimer);
+        this.textTimer = setInterval(() => {
+            const char = this.currentStr[this.charPos];
+            txtEl.textContent += char; // Using textContent preserves spaces better with css pre-wrap
+            this.charPos++;
+            if(this.charPos % 3 === 0) AudioMan.sfx('text');
+            if(this.charPos >= this.currentStr.length) {
+                clearInterval(this.textTimer);
+                this.waiting = true;
             }
         }, 30);
-    }
-    else if(step.type === 'fight') {
-        SetState('COMBAT');
-        Boss.init(step.boss, step.hp);
-        Player1.x = W/2; Player1.y = H-100; // Reset Pos
-    }
-    else if(step.type === 'victory') {
-        SetState('VICTORY');
-    }
-}
+    },
 
-// --- INPUT LISTENERS ---
-window.addEventListener('keydown', e => {
-    const k = e.key.toLowerCase();
-    if(k==='arrowup') INPUT.up=true;
-    if(k==='arrowdown') INPUT.down=true;
-    if(k==='arrowleft') INPUT.left=true;
-    if(k==='arrowright') INPUT.right=true;
-    if(k==='shift') INPUT.shift=true;
-    if(k==='z') INPUT.z=true;
-    if(k==='x') INPUT.x=true;
-    
-    // Dialogue Advance
-    if(k==='z' && STATE.screen === 'DIALOGUE' && !INPUT.z_press) {
-        INPUT.z_press = true;
-        if(charIdx < currentLine.length) {
-            // Instant finish text
-            clearInterval(textTimer);
-            document.getElementById('dialogue-text').innerText = currentLine;
-            charIdx = currentLine.length;
-            document.querySelector('.next-indicator').style.display = 'block';
-        } else {
-            scriptIdx++;
-            ProcessScript();
+    handleInteraction() {
+        if(this.state === 'DIALOGUE') {
+            if(!this.waiting) {
+                // Skip typing
+                clearInterval(this.textTimer);
+                document.getElementById('dialogue-text').textContent = this.currentStr;
+                this.waiting = true;
+            } else {
+                // Next
+                this.sIdx++;
+                this.processStep();
+            }
         }
+    },
+
+    drawFace(color, isPlayer) {
+        P_CTX.fillStyle = color;
+        P_CTX.beginPath(); P_CTX.arc(50,50, 30, 0, Math.PI*2); P_CTX.fill();
+        if(isPlayer) {
+            P_CTX.fillStyle = "#00f3ff";
+            P_CTX.beginPath(); P_CTX.arc(50,50, 10, 0, Math.PI*2); P_CTX.fill();
+        }
+    },
+
+    loop() {
+        requestAnimationFrame(() => this.loop());
+        this.tick++;
+
+        // Clear
+        CTX.fillStyle = "#050505";
+        CTX.fillRect(0,0,W,H);
+
+        // Shake
+        if(this.shake > 0) {
+            CTX.save();
+            CTX.translate(Math.random()*this.shake - this.shake/2, Math.random()*this.shake - this.shake/2);
+            this.shake *= 0.9;
+        }
+
+        if(this.state === 'INTRO') {
+            Cinematic.update();
+            Cinematic.draw(CTX);
+        }
+        else if(this.state === 'DIALOGUE' || this.state === 'COMBAT') {
+            // Player Logic
+            if(this.state === 'COMBAT') {
+                let spd = Input.isDown('bomb') ? 2 : 5;
+                if(Input.isDown('left')) this.player.x -= spd;
+                if(Input.isDown('right')) this.player.x += spd;
+                if(Input.isDown('up')) this.player.y -= spd;
+                if(Input.isDown('down')) this.player.y += spd;
+                
+                // Clamp
+                this.player.x = Math.max(20, Math.min(W-20, this.player.x));
+                this.player.y = Math.max(20, Math.min(H-20, this.player.y));
+
+                // Shoot
+                if(Input.isDown('fire') && this.tick % 5 === 0) {
+                    this.bullets.push({x:this.player.x, y:this.player.y, vx:0, vy:-15, t:'p', c:'#ff3e3e'});
+                    AudioMan.sfx('shoot');
+                }
+            }
+
+            // Draw Player
+            if(this.player.inv > 0) this.player.inv--;
+            if(!(this.player.inv > 0 && Math.floor(this.tick/4)%2)) {
+                CTX.fillStyle = "#ff3e3e";
+                CTX.beginPath();
+                CTX.arc(this.player.x, this.player.y, this.player.r, 0, Math.PI*2);
+                CTX.fill();
+                // Soul Center
+                CTX.fillStyle = "#00f3ff";
+                CTX.beginPath(); CTX.arc(this.player.x, this.player.y, 4, 0, Math.PI*2); CTX.fill();
+            }
+
+            // Boss Logic
+            if(this.state === 'COMBAT' && this.boss.active) {
+                // Move Boss
+                this.boss.x = W/2 + Math.sin(this.tick*0.02) * 100;
+                
+                // Draw Boss
+                CTX.fillStyle = this.boss.type === 'echo' ? '#aaa' : (this.boss.type==='crowd'?'#f0f':'#ffd700');
+                CTX.fillRect(this.boss.x-30, this.boss.y-30, 60, 60);
+
+                // Patterns
+                if(this.tick % 10 === 0) {
+                    // Simple pattern: aimed shot
+                    let ang = Math.atan2(this.player.y - this.boss.y, this.player.x - this.boss.x);
+                    this.bullets.push({x:this.boss.x, y:this.boss.y, vx:Math.cos(ang)*5, vy:Math.sin(ang)*5, t:'e', c:'#fff'});
+                }
+                if(this.boss.type === 'crowd' && this.tick % 30 === 0) {
+                    // Spread
+                    for(let i=-2; i<=2; i++) {
+                         this.bullets.push({x:this.boss.x, y:this.boss.y, vx:i*2, vy:4, t:'e', c:'#f0f'});
+                    }
+                }
+            }
+
+            // Bullet Physics
+            for(let i=this.bullets.length-1; i>=0; i--) {
+                let b = this.bullets[i];
+                b.x += b.vx; b.y += b.vy;
+                
+                CTX.fillStyle = b.c;
+                CTX.beginPath(); CTX.arc(b.x, b.y, 5, 0, Math.PI*2); CTX.fill();
+
+                // Cleanup
+                if(b.x<0||b.x>W||b.y<0||b.y>H) { this.bullets.splice(i,1); continue; }
+
+                // Collisions
+                if(b.t === 'e') {
+                    // Hit Player
+                    let d = Math.hypot(b.x - this.player.x, b.y - this.player.y);
+                    if(d < 10 && this.player.inv === 0) {
+                        this.player.hp--;
+                        this.player.inv = 60;
+                        AudioMan.sfx('hit');
+                        this.bullets.splice(i,1);
+                        if(this.player.hp <= 0) {
+                             this.state = 'OVER';
+                             document.getElementById('game-over').classList.remove('hidden');
+                             document.getElementById('touch-controls').style.display = 'none';
+                        }
+                    }
+                } else if(b.t === 'p' && this.boss.active) {
+                    // Hit Boss
+                    let d = Math.hypot(b.x - this.boss.x, b.y - this.boss.y);
+                    if(d < 40) {
+                        this.boss.hp--;
+                        this.bullets.splice(i,1);
+                        if(this.boss.hp <= 0) {
+                            this.boss.active = false;
+                            this.bullets = []; // Clear screen
+                            this.sIdx++;
+                            this.processStep();
+                        }
+                    }
+                }
+            }
+
+            // HUD
+            const hpPct = (this.player.hp / this.player.maxHp) * 100;
+            document.getElementById('hp-bar').style.width = hpPct + "%";
+        }
+
+        if(this.shake > 0) CTX.restore();
     }
-});
-
-window.addEventListener('keyup', e => {
-    const k = e.key.toLowerCase();
-    if(k==='arrowup') INPUT.up=false;
-    if(k==='arrowdown') INPUT.down=false;
-    if(k==='arrowleft') INPUT.left=false;
-    if(k==='arrowright') INPUT.right=false;
-    if(k==='shift') INPUT.shift=false;
-    if(k==='z') { INPUT.z=false; INPUT.z_press=false; }
-    if(k==='x') INPUT.x=false;
-});
-
-// --- BUTTONS ---
-document.getElementById('btn-start').onclick = () => {
-    AudioEngine.init();
-    scriptIdx = 0;
-    ProcessScript();
-    GameLoop();
 };
-document.getElementById('btn-retry').onclick = () => {
-    Player1.hp = Player1.maxHp;
-    Boss.hp = Boss.maxHp;
-    SetState('COMBAT');
-};
-document.getElementById('btn-reset').onclick = () => location.reload();
+
+Game.init();
+
+document.getElementById('start-btn').onclick = () => Game.startIntro();
+document.getElementById('retry-btn').onclick = () => location.reload();
 
 </script>
 </body>
