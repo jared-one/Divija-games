@@ -370,14 +370,27 @@
     </div>
 
     <script>
-        // Optional: Simple JS to enhance the "Undertale" selection feel
         const cards = document.querySelectorAll('.game-card');
         
+        // Setup Audio
+        const bgm = new Audio('Undertale OST - MEMORY (Build Up Ver.) (Piano & Orchestra Cover).mp3');
+        bgm.loop = true;
+        let musicStarted = false;
+
         cards.forEach(card => {
             card.addEventListener('mouseenter', () => {
-                // You could add a sound effect here if you had audio files
-                // let audio = new Audio('select.wav'); audio.play();
+                // Console Log Effect
                 console.log('Soul moved to ' + card.querySelector('.game-title').innerText);
+
+                // Try to trigger music on first hover
+                if (!musicStarted) {
+                    bgm.currentTime = 9; // Start exactly at 00:00:09
+                    bgm.play().then(() => {
+                        musicStarted = true;
+                    }).catch(err => {
+                        console.log("Browser policy blocked audio. User interaction needed.");
+                    });
+                }
             });
         });
     </script>
