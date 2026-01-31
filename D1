@@ -1,1 +1,801 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>DIVIJA: SYSTEM REBOOT</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,600&family=VT323&display=swap');
+
+    :root {
+      --bg: #050505;
+      --heart: #ff3e3e;
+      --soul: #00f3ff;
+      --gold: #ffd700;
+    }
+
+    body {
+      margin: 0;
+      background: #000;
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'VT323', monospace;
+      overflow: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+      color: white;
+    }
+
+    #crt-frame {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      max-width: 900px;
+      max-height: 650px;
+      background: #000;
+      border: 2px solid #222;
+      box-shadow: 0 0 50px rgba(0, 243, 255, 0.15);
+      overflow: hidden;
+    }
+
+    canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+
+    .scanlines {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+                  linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+      background-size: 100% 3px, 3px 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .ui-layer {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 20;
+      padding: 20px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    #hud { opacity: 0; transition: opacity 1s; }
+    .bar-container { display: flex; align-items: center; margin-bottom: 8px; }
+    .bar-label { width: 40px; color: var(--gold); font-size: 20px; }
+    .bar-border { width: 150px; height: 12px; border: 2px solid white; background: #222; margin-left: 10px; }
+    .bar-fill { height: 100%; transition: width 0.1s linear; }
+
+    #dialogue-box {
+      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+      width: 90%; min-height: 160px;
+      background: rgba(0, 0, 0, 0.95); border: 2px solid white;
+      padding: 15px;
+      display: none;
+      box-sizing: border-box;
+      pointer-events: auto;
+    }
+    .portrait {
+      width: 100px; height: 100px; border: 1px solid #444; float: left; margin-right: 15px;
+      background: #111; display: flex; justify-content: center; align-items: center;
+    }
+    .text-content {
+      margin-left: 120px; font-family: 'Cormorant Garamond', serif;
+      font-size: 26px; line-height: 1.2; white-space: pre-wrap; color: #ddd;
+    }
+    .speaker {
+      color: var(--soul);
+      font-family: 'VT323';
+      font-size: 22px;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    .next-btn {
+      position: absolute; bottom: 10px; right: 15px; font-family: 'VT323';
+      color: var(--gold); animation: blink 1s infinite; font-size: 18px;
+    }
+
+    .fullscreen-text {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      background: #000; z-index: 50;
+      transition: opacity 1s;
+      pointer-events: auto;
+    }
+    .hidden { opacity: 0; pointer-events: none; }
+
+    h1 { font-size: 80px; color: var(--soul); margin: 0; text-shadow: 0 0 20px var(--soul); letter-spacing: 5px; }
+
+    button {
+      margin-top: 40px;
+      background: transparent;
+      color: white;
+      border: 2px solid white;
+      font-family: 'VT323';
+      font-size: 28px;
+      padding: 15px 50px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    button:hover { background: white; color: black; box-shadow: 0 0 20px white; }
+
+    #touch-controls {
+      display: none;
+      position: absolute; bottom: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 100;
+    }
+    .touch-zone { position: absolute; pointer-events: auto; }
+
+    .dpad-container { position: absolute; bottom: 40px; left: 40px; width: 160px; height: 160px; pointer-events: none; }
+    .dpad-btn {
+      position: absolute; background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.3);
+      pointer-events: auto; border-radius: 8px;
+    }
+    .dpad-btn:active { background: rgba(255,255,255,0.5); }
+
+    #btn-up { top: 0; left: 50px; width: 60px; height: 60px; }
+    #btn-down { bottom: 0; left: 50px; width: 60px; height: 60px; }
+    #btn-left { top: 50px; left: 0; width: 60px; height: 60px; }
+    #btn-right { top: 50px; right: 0; width: 60px; height: 60px; }
+
+    .action-btn {
+      position: absolute; width: 80px; height: 80px; border-radius: 50%;
+      backdrop-filter: blur(4px); border: 2px solid rgba(255,255,255,0.5);
+      pointer-events: auto; display: flex; justify-content: center; align-items: center;
+      font-size: 24px; color: rgba(255,255,255,0.8);
+    }
+    .action-btn:active { background: white; color: black; }
+    #btn-z { bottom: 40px; right: 40px; background: rgba(255, 62, 62, 0.2); }
+    #btn-x { bottom: 60px; right: 140px; background: rgba(0, 243, 255, 0.2); width: 60px; height: 60px; font-size: 20px; }
+
+    @media (max-width: 900px) {
+      #touch-controls { display: block; }
+      /* FIXED: correct id */
+      #crt-frame { width: 100vw; height: 100vh; max-width: none; max-height: none; border: none; }
+      h1 { font-size: 50px; }
+      #dialogue-box { bottom: 40%; }
+    }
+
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+  </style>
+</head>
+<body>
+  <div id="crt-frame">
+    <canvas id="canvas"></canvas>
+    <div class="scanlines"></div>
+
+    <div id="touch-controls">
+      <div class="dpad-container">
+        <div id="btn-up" class="dpad-btn"></div>
+        <div id="btn-down" class="dpad-btn"></div>
+        <div id="btn-left" class="dpad-btn"></div>
+        <div id="btn-right" class="dpad-btn"></div>
+      </div>
+      <div id="btn-z" class="action-btn">Z</div>
+      <div id="btn-x" class="action-btn">X</div>
+    </div>
+
+    <div class="ui-layer">
+      <div id="hud">
+        <div class="bar-container">
+          <span class="bar-label">HP</span>
+          <div class="bar-border"><div class="bar-fill" id="hp-bar" style="background:var(--heart); width:100%"></div></div>
+        </div>
+        <div class="bar-container">
+          <span class="bar-label">MP</span>
+          <div class="bar-border"><div class="bar-fill" id="mp-bar" style="background:var(--soul); width:0%"></div></div>
+        </div>
+      </div>
+
+      <div id="dialogue-box">
+        <div class="portrait"><canvas id="p-canvas" width="100" height="100"></canvas></div>
+        <div class="text-content">
+          <div class="speaker" id="speaker-name">UNKNOWN</div>
+          <div id="dialogue-text"></div>
+        </div>
+        <div class="next-btn">[Z] CONTINUE</div>
+      </div>
+    </div>
+
+    <div id="intro-screen" class="fullscreen-text">
+      <h1>DIVIJA</h1>
+      <p style="color:#888; font-size: 24px; letter-spacing: 5px; margin-bottom: 40px; font-family: 'Cormorant Garamond'; font-style: italic;">
+        The Calculus of the Heart
+      </p>
+      <button id="start-btn">INITIALIZE</button>
+      <div style="margin-top: 30px; font-size: 16px; color: #555; font-family: 'VT323'; text-align:center;">
+        KEYBOARD: Arrows/WASD • Z/Enter to Interact • X/Shift to Focus<br>
+        TOUCH: On-screen controls enabled
+      </div>
+    </div>
+
+    <div id="game-over" class="fullscreen-text hidden">
+      <h1 style="color:#666; font-size: 60px">FATAL ERROR</h1>
+      <p style="font-size: 24px; color: #aaa;">The heart stopped, but the memory remains.</p>
+      <button id="retry-btn">REBOOT SYSTEM</button>
+    </div>
+
+    <div id="victory-screen" class="fullscreen-text hidden">
+      <h1 style="color:var(--gold)">PROOF COMPLETE</h1>
+      <div style="text-align: center; max-width: 600px; font-family: 'Cormorant Garamond'; font-size: 26px; line-height: 1.5;">
+        <p>You have compiled the fragments of your soul.</p>
+        <p>You are whole.</p>
+        <hr style="border-color: #333; margin: 20px 0;">
+        <p style="color: var(--heart); font-size: 32px; text-shadow: 0 0 10px var(--heart);">Happy Birthday, Divija.</p>
+        <p style="color: #888; font-size: 20px; margin-top: 10px;">- Daddy</p>
+      </div>
+      <button onclick="location.reload()">SLEEP</button>
+    </div>
+  </div>
+
+<script>
+/**
+ * ETHER_CORE v12 - State/Overlay Fix + Intro Skip + Shake Fix + Mobile sizing fix
+ */
+
+const CANVAS = document.getElementById('canvas');
+const CTX = CANVAS.getContext('2d');
+const P_CANVAS = document.getElementById('p-canvas');
+const P_CTX = P_CANVAS.getContext('2d');
+
+let W = 900, H = 650;
+let DPR = 1;
+
+function resize() {
+  const rect = CANVAS.getBoundingClientRect();
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+
+  // Game coordinates are in CSS pixels (W/H). Canvas is scaled for sharpness.
+  W = rect.width;
+  H = rect.height;
+
+  CANVAS.width = Math.max(1, Math.floor(rect.width * DPR));
+  CANVAS.height = Math.max(1, Math.floor(rect.height * DPR));
+  CTX.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+  // Portrait canvas stays 100x100; no DPR needed (pixel-art vibe).
+}
+window.addEventListener('resize', resize);
+resize();
+
+// --- INPUT SYSTEM (pressed vs held) ---
+const Input = {
+  keys: {},
+  pressed: { fire: false, bomb: false },
+  touch: { up: false, down: false, left: false, right: false, z: false, x: false },
+
+  init() {
+    const preventKeys = new Set(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space']);
+    window.addEventListener('keydown', (e) => {
+      if (preventKeys.has(e.code)) e.preventDefault();
+      const wasDown = !!this.keys[e.code];
+      this.keys[e.code] = true;
+
+      if (!wasDown) {
+        if (e.code === 'KeyZ' || e.code === 'Enter') this.pressed.fire = true;
+        if (e.code === 'KeyX' || e.code === 'ShiftLeft') this.pressed.bomb = true;
+      }
+    }, { passive: false });
+
+    window.addEventListener('keyup', (e) => {
+      this.keys[e.code] = false;
+    });
+
+    const bind = (id, key, onPress) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+
+      el.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        this.touch[key] = true;
+        if (onPress) onPress();
+      }, { passive: false });
+
+      el.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        this.touch[key] = false;
+      }, { passive: false });
+    };
+
+    bind('btn-up', 'up');
+    bind('btn-down', 'down');
+    bind('btn-left', 'left');
+    bind('btn-right', 'right');
+    bind('btn-z', 'z', () => this.pressed.fire = true);
+    bind('btn-x', 'x', () => this.pressed.bomb = true);
+
+    // Tap screen to skip intro / advance dialogue (nice on mobile)
+    document.getElementById('crt-frame').addEventListener('touchstart', () => {
+      if (Game.state === 'INTRO' || Game.state === 'DIALOGUE') this.pressed.fire = true;
+    }, { passive: true });
+  },
+
+  consume(action) {
+    if (!this.pressed[action]) return false;
+    this.pressed[action] = false;
+    return true;
+  },
+
+  isDown(action) {
+    if (action === 'up') return this.keys['ArrowUp'] || this.keys['KeyW'] || this.touch.up;
+    if (action === 'down') return this.keys['ArrowDown'] || this.keys['KeyS'] || this.touch.down;
+    if (action === 'left') return this.keys['ArrowLeft'] || this.keys['KeyA'] || this.touch.left;
+    if (action === 'right') return this.keys['ArrowRight'] || this.keys['KeyD'] || this.touch.right;
+    if (action === 'fire') return this.keys['KeyZ'] || this.keys['Enter'] || this.touch.z;
+    if (action === 'bomb') return this.keys['KeyX'] || this.keys['ShiftLeft'] || this.touch.x;
+    return false;
+  }
+};
+
+// --- AUDIO SYNTH ---
+const AudioMan = {
+  ctx: null,
+  init() {
+    window.AudioContext = window.AudioContext || window.webkitAudioContext;
+    this.ctx = new AudioContext();
+  },
+  ensureRunning() {
+    if (!this.ctx) return;
+    if (this.ctx.state === 'suspended') this.ctx.resume().catch(()=>{});
+  },
+  play(freq, type, dur, vol=0.1) {
+    if(!this.ctx) return;
+    this.ensureRunning();
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+    gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + dur);
+    osc.connect(gain); gain.connect(this.ctx.destination);
+    osc.start(); osc.stop(this.ctx.currentTime + dur);
+  },
+  sfx(id) {
+    if(id === 'text') this.play(800 + Math.random()*200, 'sine', 0.05, 0.02);
+    if(id === 'shoot') this.play(300, 'triangle', 0.1, 0.05);
+    if(id === 'hit') { this.play(100, 'sawtooth', 0.3, 0.2); Game.shake = Math.max(Game.shake, 10); }
+    if(id === 'graze') this.play(1200, 'sine', 0.08, 0.03);
+  }
+};
+
+// --- CINEMATIC ENGINE ---
+const Cinematic = {
+  phase: 0,
+  timer: 0,
+
+  start() {
+    this.phase = 0;
+    this.timer = 0;
+    document.getElementById('intro-screen').classList.add('hidden');
+  },
+
+  update() {
+    this.timer++;
+
+    // Allow skip
+    if (Input.consume('fire')) {
+      Game.startScript();
+      return;
+    }
+
+    if(this.phase === 0) {
+      if(this.timer > 120) { this.phase = 1; this.timer = 0; }
+    } else if(this.phase === 1) {
+      if(this.timer > 160) { this.phase = 2; this.timer = 0; }
+    } else if(this.phase === 2) {
+      if(this.timer > 180) Game.startScript();
+    }
+  },
+
+  draw(ctx) {
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0,0,W,H);
+    const cx = W/2, cy = H/2;
+
+    if(this.phase === 0) {
+      ctx.fillStyle = "#0f0";
+      ctx.font = "20px monospace";
+      ctx.fillText("> SYSTEM CRITICAL", 50, 50);
+      ctx.fillText("> REALITY.EXE NOT FOUND", 50, 80);
+      ctx.fillStyle = "#666";
+      ctx.fillText("> PRESS Z TO SKIP", 50, 110);
+
+      if(Math.random() > 0.9) {
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0, Math.random()*H, W, 5);
+      }
+      const shakeX = (Math.random()-0.5)*5;
+      ctx.fillStyle = "#ff3e3e";
+      ctx.beginPath(); ctx.arc(cx+shakeX, cy, 30, 0, Math.PI*2); ctx.fill();
+    }
+    else if(this.phase === 1) {
+      const r = this.timer * 4;
+      ctx.strokeStyle = "#00f3ff";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI*2);
+      ctx.stroke();
+
+      const scale = 1 - (this.timer/160);
+      ctx.fillStyle = "#ff3e3e";
+      ctx.beginPath(); ctx.arc(cx, cy, Math.max(2, 30*scale), 0, Math.PI*2); ctx.fill();
+
+      ctx.fillStyle = "#fff";
+      ctx.font = "30px VT323";
+      ctx.textAlign = "center";
+      ctx.fillText("FALLING INTO THE CODE...", cx, cy + 100);
+    }
+    else if(this.phase === 2) {
+      ctx.fillStyle = "rgba(0, 243, 255, 0.3)";
+      ctx.font = "20px monospace";
+      for(let i=0; i<30; i++) {
+        ctx.fillText(Math.random()>0.5?"1":"0", Math.random()*W, (this.timer*15 + Math.random()*500)%H);
+      }
+      const alpha = this.timer / 180;
+      ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, alpha)})`;
+      ctx.fillRect(0,0,W,H);
+    }
+  }
+};
+
+// --- GAME LOGIC ---
+const Game = {
+  state: 'MENU',
+  tick: 0,
+  shake: 0,
+
+  player: { x: 0, y: 0, hp: 20, maxHp: 20, mp: 0, maxMp: 100, r: 8, inv: 0 },
+  boss: { active: false, x:0, y:0, hp: 500, max: 500, type: 'echo' },
+  bullets: [],
+  lastGrazeTick: -9999,
+
+  script: [
+    { t:'text', s:'sys', txt:"SYSTEM REBOOT... SUCCESS." },
+    { t:'text', s:'sys', txt:"WARNING: Unauthorized Entity Detected." },
+    { t:'text', s:'divija', txt:"Where... am I? It's so dark." },
+    { t:'text', s:'divija', txt:"I was just reading a message, and then..." },
+    { t:'text', s:'echo', txt:"You fell. Just like you always do." },
+    { t:'text', s:'divija', txt:"Who said that?" },
+    { t:'text', s:'echo', txt:"I am the doubt in your chest. The 'what if'." },
+    { t:'combat', boss:'echo', hp:300 },
+    { t:'text', s:'divija', txt:"I... I didn't run away." },
+    { t:'text', s:'echo', txt:"Not this time. But the Crowd is watching." },
+    { t:'combat', boss:'crowd', hp:400 },
+    { t:'text', s:'crowd', txt:"She's trying too hard. Look at her." },
+    { t:'text', s:'divija', txt:"I'm not doing this for you!" },
+    { t:'text', s:'sys', txt:"WARNING: Chronological instability detected." },
+    { t:'combat', boss:'clock', hp:500 },
+    { t:'text', s:'memory', txt:"Divija. Breathe." },
+    { t:'text', s:'divija', txt:"Dad? Is that you?" },
+    { t:'text', s:'memory', txt:"You are stronger than the noise. Come home." },
+    { t:'win' }
+  ],
+  sIdx: 0,
+
+  textTimer: null,
+  currentStr: "",
+  charPos: 0,
+  waiting: false,
+
+  init() {
+    Input.init();
+    this.loop();
+  },
+
+  hideAllScreens() {
+    document.getElementById('intro-screen').classList.add('hidden');
+    document.getElementById('game-over').classList.add('hidden');
+    document.getElementById('victory-screen').classList.add('hidden');
+  },
+
+  startIntro() {
+    AudioMan.init();
+    this.hideAllScreens();
+    this.state = 'INTRO';
+    Cinematic.start();
+    document.getElementById('touch-controls').style.display = '';
+    document.getElementById('hud').style.opacity = 0;
+    document.getElementById('dialogue-box').style.display = 'none';
+  },
+
+  startScript() {
+    this.hideAllScreens();
+    this.state = 'DIALOGUE';
+
+    // reset combat variables
+    this.tick = 0;
+    this.shake = 0;
+    this.bullets = [];
+    this.boss.active = false;
+
+    // reset player
+    this.player.x = W/2; this.player.y = H - 100;
+    this.player.hp = this.player.maxHp;
+    this.player.mp = 0;
+    this.player.inv = 0;
+
+    // reset script
+    this.sIdx = 0;
+
+    document.getElementById('hud').style.opacity = 1;
+    document.getElementById('touch-controls').style.display = '';
+    this.processStep();
+  },
+
+  processStep() {
+    if(this.sIdx >= this.script.length) return;
+    const s = this.script[this.sIdx];
+
+    if(s.t === 'text') {
+      this.state = 'DIALOGUE';
+      this.showDialogue(s.s, s.txt);
+    } else if (s.t === 'combat') {
+      this.state = 'COMBAT';
+      document.getElementById('dialogue-box').style.display = 'none';
+      clearInterval(this.textTimer);
+      this.waiting = false;
+
+      this.boss.active = true;
+      this.boss.type = s.boss;
+      this.boss.max = s.hp;
+      this.boss.hp = s.hp;
+      this.boss.x = W/2; this.boss.y = 100;
+      this.bullets = [];
+    } else if (s.t === 'win') {
+      this.state = 'WIN';
+      document.getElementById('victory-screen').classList.remove('hidden');
+      document.getElementById('hud').style.opacity = 0;
+      document.getElementById('touch-controls').style.display = 'none';
+      document.getElementById('dialogue-box').style.display = 'none';
+    }
+  },
+
+  showDialogue(speaker, text) {
+    const box = document.getElementById('dialogue-box');
+    box.style.display = 'block';
+    document.getElementById('speaker-name').innerText = speaker;
+    const txtEl = document.getElementById('dialogue-text');
+    txtEl.textContent = "";
+
+    P_CTX.fillStyle = "#111"; P_CTX.fillRect(0,0,100,100);
+    this.drawPortrait(speaker);
+
+    this.currentStr = text;
+    this.charPos = 0;
+    this.waiting = false;
+
+    clearInterval(this.textTimer);
+    this.textTimer = setInterval(() => {
+      const char = this.currentStr[this.charPos];
+      txtEl.textContent += char;
+      this.charPos++;
+      if(this.charPos % 3 === 0) AudioMan.sfx('text');
+      if(this.charPos >= this.currentStr.length) {
+        clearInterval(this.textTimer);
+        this.waiting = true;
+      }
+    }, 30);
+  },
+
+  handleInteraction() {
+    if(this.state === 'INTRO') {
+      this.startScript();
+      return;
+    }
+    if(this.state === 'DIALOGUE') {
+      if(!this.waiting) {
+        clearInterval(this.textTimer);
+        document.getElementById('dialogue-text').textContent = this.currentStr;
+        this.waiting = true;
+      } else {
+        this.sIdx++;
+        this.processStep();
+      }
+    }
+  },
+
+  drawPortrait(speaker) {
+    const ctx = P_CTX;
+    const cx = 50, cy = 50;
+
+    if(speaker === 'divija') {
+      ctx.fillStyle = "#ff3e3e"; ctx.beginPath(); ctx.arc(cx, cy, 30, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = "#00f3ff"; ctx.beginPath(); ctx.arc(cx, cy, 10, 0, Math.PI*2); ctx.fill();
+    } else if(speaker === 'sys') {
+      ctx.fillStyle = "#00f3ff"; ctx.font = "40px monospace"; ctx.textAlign="center"; ctx.fillText("SYS", cx, cy+10);
+    } else if(speaker === 'echo') {
+      ctx.fillStyle = "#888"; ctx.fillRect(20, 20, 60, 60);
+    } else if(speaker === 'crowd') {
+      ctx.fillStyle = "#f0f";
+      for(let i=0;i<3;i++) { ctx.beginPath(); ctx.arc(30+i*20, 50, 10, 0, Math.PI*2); ctx.fill(); }
+    } else if(speaker === 'clock') {
+      ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(cx, cy, 28, 0, Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx, cy-16); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+12, cy+6); ctx.stroke();
+    } else {
+      ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(cx, cy, 20, 0, Math.PI*2); ctx.fill();
+    }
+  },
+
+  spawnBossBullets() {
+    // Small variety while keeping your minimalist vibe
+    const t = this.tick;
+    const bx = this.boss.x, by = this.boss.y;
+
+    if (this.boss.type === 'echo') {
+      if(t % 10 === 0) {
+        const ang = Math.atan2(this.player.y - by, this.player.x - bx);
+        this.bullets.push({x:bx, y:by, vx:Math.cos(ang)*5, vy:Math.sin(ang)*5, t:'e', c:'#fff'});
+      }
+    } else if (this.boss.type === 'crowd') {
+      if(t % 18 === 0) {
+        for (let k = -2; k <= 2; k++) {
+          const ang = Math.atan2(this.player.y - by, this.player.x - bx) + k*0.18;
+          this.bullets.push({x:bx, y:by, vx:Math.cos(ang)*4.2, vy:Math.sin(ang)*4.2, t:'e', c:'#f0f'});
+        }
+      }
+    } else if (this.boss.type === 'clock') {
+      if(t % 14 === 0) {
+        const base = t * 0.08;
+        for (let i=0; i<10; i++) {
+          const ang = base + i*(Math.PI*2/10);
+          this.bullets.push({x:bx, y:by, vx:Math.cos(ang)*3.8, vy:Math.sin(ang)*3.8, t:'e', c:'#ffd700'});
+        }
+      }
+    }
+  },
+
+  loop() {
+    requestAnimationFrame(() => this.loop());
+    this.tick++;
+
+    // Interaction press
+    if (Input.consume('fire')) this.handleInteraction();
+
+    // Clear
+    CTX.fillStyle = "#050505";
+    CTX.fillRect(0,0,W,H);
+
+    // Shake (FIXED save/restore pairing)
+    let didShake = false;
+    if(this.shake > 0) {
+      CTX.save();
+      didShake = true;
+      CTX.translate(Math.random()*this.shake - this.shake/2, Math.random()*this.shake - this.shake/2);
+      this.shake *= 0.9;
+      if(this.shake < 0.5) this.shake = 0;
+    }
+
+    if(this.state === 'INTRO') {
+      Cinematic.update();
+      Cinematic.draw(CTX);
+    }
+    else if(this.state === 'DIALOGUE' || this.state === 'COMBAT') {
+
+      // Player Logic
+      if(this.state === 'COMBAT') {
+        const focus = Input.isDown('bomb');
+        const spd = focus ? 3 : 6;
+
+        if(Input.isDown('left')) this.player.x -= spd;
+        if(Input.isDown('right')) this.player.x += spd;
+        if(Input.isDown('up')) this.player.y -= spd;
+        if(Input.isDown('down')) this.player.y += spd;
+
+        this.player.x = Math.max(20, Math.min(W-20, this.player.x));
+        this.player.y = Math.max(20, Math.min(H-20, this.player.y));
+
+        // Shoot
+        if(Input.isDown('fire') && this.tick % 5 === 0) {
+          this.bullets.push({x:this.player.x, y:this.player.y, vx:0, vy:-15, t:'p', c:'#ff3e3e'});
+          AudioMan.sfx('shoot');
+        }
+      }
+
+      // Draw Player
+      if(this.player.inv > 0) this.player.inv--;
+      if(!(this.player.inv > 0 && Math.floor(this.tick/4)%2)) {
+        CTX.fillStyle = "#ff3e3e";
+        CTX.beginPath();
+        const x = this.player.x, y = this.player.y;
+        CTX.moveTo(x, y + 5);
+        CTX.bezierCurveTo(x, y, x - 10, y - 10, x - 10, y);
+        CTX.bezierCurveTo(x - 10, y + 10, x, y + 15, x, y + 20);
+        CTX.bezierCurveTo(x, y + 15, x + 10, y + 10, x + 10, y);
+        CTX.bezierCurveTo(x + 10, y - 10, x, y, x, y + 5);
+        CTX.fill();
+
+        if(Input.isDown('bomb')) {
+          CTX.fillStyle = "#00f3ff";
+          CTX.beginPath(); CTX.arc(x, y+8, 4, 0, Math.PI*2); CTX.fill();
+        }
+      }
+
+      // Boss
+      if(this.state === 'COMBAT' && this.boss.active) {
+        this.boss.x = W/2 + Math.sin(this.tick*0.02) * 100;
+
+        CTX.fillStyle =
+          this.boss.type === 'echo' ? '#aaa' :
+          (this.boss.type === 'crowd' ? '#f0f' : '#ffd700');
+        CTX.fillRect(this.boss.x-30, this.boss.y-30, 60, 60);
+
+        this.spawnBossBullets();
+      }
+
+      // Bullets
+      for(let i=this.bullets.length-1; i>=0; i--) {
+        const b = this.bullets[i];
+        b.x += b.vx; b.y += b.vy;
+
+        CTX.fillStyle = b.c;
+        CTX.beginPath(); CTX.arc(b.x, b.y, 5, 0, Math.PI*2); CTX.fill();
+
+        if(b.x<0||b.x>W||b.y<0||b.y>H) { this.bullets.splice(i,1); continue; }
+
+        if(b.t === 'e') {
+          const hitX = this.player.x, hitY = this.player.y + 10;
+          const d = Math.hypot(b.x - hitX, b.y - hitY);
+
+          if(d < 10 && this.player.inv === 0) {
+            this.player.hp--;
+            this.player.inv = 60;
+            AudioMan.sfx('hit');
+            this.bullets.splice(i,1);
+
+            if(this.player.hp <= 0) {
+              this.state = 'OVER';
+              document.getElementById('game-over').classList.remove('hidden');
+              document.getElementById('touch-controls').style.display = 'none';
+              document.getElementById('dialogue-box').style.display = 'none';
+            }
+          }
+          else if (d < 30) {
+            // Graze with cooldown to avoid audio spam
+            if (this.tick - this.lastGrazeTick > 10) {
+              this.lastGrazeTick = this.tick;
+              AudioMan.sfx('graze');
+            }
+          }
+        }
+        else if(b.t === 'p' && this.boss.active) {
+          const d = Math.hypot(b.x - this.boss.x, b.y - this.boss.y);
+          if(d < 40) {
+            this.boss.hp--;
+            this.player.mp = Math.min(this.player.maxMp, this.player.mp + 1);
+            this.bullets.splice(i,1);
+
+            if(this.boss.hp <= 0) {
+              this.boss.active = false;
+              this.bullets = [];
+              this.sIdx++;
+              this.processStep();
+            }
+          }
+        }
+      }
+
+      // HUD
+      document.getElementById('hp-bar').style.width = ((this.player.hp / this.player.maxHp) * 100) + "%";
+      document.getElementById('mp-bar').style.width = ((this.player.mp / this.player.maxMp) * 100) + "%";
+    }
+
+    if(didShake) CTX.restore();
+  }
+};
+
+Game.init();
+
+document.getElementById('start-btn').onclick = () => Game.startIntro();
+document.getElementById('retry-btn').onclick = () => Game.startScript();
+</script>
+</body>
+</html>
