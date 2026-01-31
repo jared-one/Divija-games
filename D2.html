@@ -1,0 +1,1566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PROJECT ECHO // NEURAL RECONNECTION</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Fira+Code:wght@300;500&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --void: #020204;
+            --primary: #00e5ff;
+            --secondary: #7c3aed;
+            --danger: #ff0040;
+            --success: #00ff88;
+            --warning: #ffa500;
+            --gold: #ffd700;
+            --text: #e8eaed;
+            --dim: #4a5568;
+            --glass: rgba(8, 8, 15, 0.92);
+            
+            --font-display: 'Orbitron', sans-serif;
+            --font-mono: 'Fira Code', monospace;
+            --font-story: 'Cinzel', serif;
+        }
+
+        *, *::before, *::after {
+            margin: 0; padding: 0; box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        html, body {
+            height: 100%; width: 100%;
+            overflow: hidden;
+            background: var(--void);
+            font-family: var(--font-mono);
+            color: var(--text);
+        }
+
+        /* === VISUAL LAYERS === */
+        .layer {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        #layer-particles {
+            z-index: 1;
+            opacity: 0.7;
+        }
+
+        #layer-grid {
+            z-index: 2;
+            background-image: 
+                linear-gradient(rgba(0, 229, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 229, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridPulse 8s ease-in-out infinite;
+        }
+
+        #layer-scanlines {
+            z-index: 100;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 0, 0, 0.15) 2px,
+                rgba(0, 0, 0, 0.15) 4px
+            );
+        }
+
+        #layer-vignette {
+            z-index: 101;
+            background: radial-gradient(ellipse at center, transparent 0%, transparent 40%, rgba(0,0,0,0.8) 100%);
+        }
+
+        #layer-glitch {
+            z-index: 102;
+            opacity: 0;
+            mix-blend-mode: screen;
+            transition: opacity 0.1s;
+        }
+
+        /* === MAIN CONTAINERS === */
+        .screen {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+
+        .screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0.95);
+        }
+
+        /* === BOOT SCREEN === */
+        #screen-boot {
+            flex-direction: column;
+            gap: 30px;
+            background: var(--void);
+        }
+
+        .boot-logo {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: 900;
+            letter-spacing: 0.3em;
+            text-shadow: 
+                0 0 20px var(--primary),
+                0 0 40px var(--primary),
+                0 0 60px rgba(0, 229, 255, 0.5);
+            position: relative;
+        }
+
+        .boot-logo::before,
+        .boot-logo::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .boot-logo::before {
+            color: var(--danger);
+            animation: glitchText 3s infinite;
+            clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
+        }
+
+        .boot-logo::after {
+            color: var(--secondary);
+            animation: glitchText 2s infinite reverse;
+            clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%);
+        }
+
+        .boot-subtitle {
+            font-size: 0.9rem;
+            color: var(--dim);
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+        }
+
+        .boot-warning {
+            color: var(--danger);
+            font-size: 0.8rem;
+            opacity: 0;
+            animation: fadeIn 1s ease 1s forwards, pulse 2s ease-in-out infinite 1s;
+        }
+
+        .btn-boot {
+            margin-top: 40px;
+            padding: 18px 60px;
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            letter-spacing: 0.3em;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s ease;
+        }
+
+        .btn-boot::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: var(--primary);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn-boot:hover {
+            color: var(--void);
+            text-shadow: none;
+            box-shadow: 0 0 40px var(--primary);
+        }
+
+        .btn-boot:hover::before {
+            width: 400px;
+            height: 400px;
+        }
+
+        .btn-boot span {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* === NARRATIVE SCREEN === */
+        #screen-narrative {
+            background: #000;
+        }
+
+        .narrative-container {
+            max-width: 700px;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .narrative-icon {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 40px;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 1s ease;
+        }
+
+        .narrative-icon.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .narrative-icon svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 20px var(--primary));
+        }
+
+        .narrative-text {
+            font-family: var(--font-story);
+            font-size: 1.4rem;
+            line-height: 1.8;
+            color: var(--text);
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 1s ease 0.3s;
+        }
+
+        .narrative-text.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .narrative-hint {
+            margin-top: 50px;
+            font-size: 0.75rem;
+            color: var(--dim);
+            opacity: 0;
+            animation: pulse 2s ease-in-out infinite;
+            transition: opacity 1s ease 1.5s;
+        }
+
+        .narrative-hint.visible {
+            opacity: 0.7;
+        }
+
+        /* === GAME SCREEN === */
+        #screen-game {
+            padding: 20px;
+        }
+
+        .terminal {
+            width: 100%;
+            max-width: 580px;
+            background: var(--glass);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            box-shadow: 
+                0 0 0 1px rgba(0, 229, 255, 0.1),
+                0 25px 50px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            overflow: hidden;
+            transform-style: preserve-3d;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .terminal.shake {
+            animation: shake 0.5s ease;
+        }
+
+        .terminal.critical {
+            border-color: var(--danger);
+            box-shadow: 
+                0 0 0 1px var(--danger),
+                0 0 60px rgba(255, 0, 64, 0.3),
+                inset 0 0 30px rgba(255, 0, 64, 0.1);
+        }
+
+        .terminal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .terminal-title {
+            font-family: var(--font-display);
+            font-size: 0.75rem;
+            letter-spacing: 0.2em;
+            color: var(--primary);
+        }
+
+        .terminal-status {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.7rem;
+            color: var(--dim);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .status-dot.warning { background: var(--warning); box-shadow: 0 0 10px var(--warning); }
+        .status-dot.danger { background: var(--danger); box-shadow: 0 0 10px var(--danger); }
+
+        .terminal-body {
+            padding: 25px;
+            min-height: 500px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* INTEGRITY BAR */
+        .integrity-container {
+            margin-bottom: 20px;
+        }
+
+        .integrity-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.7rem;
+            letter-spacing: 0.1em;
+            color: var(--dim);
+        }
+
+        .integrity-value {
+            color: var(--success);
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .integrity-value.warning { color: var(--warning); }
+        .integrity-value.danger { color: var(--danger); }
+
+        .integrity-track {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .integrity-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
+            box-shadow: 0 0 15px var(--primary);
+            border-radius: 2px;
+            transition: width 0.5s ease, background 0.5s ease;
+        }
+
+        .integrity-fill.warning {
+            background: linear-gradient(90deg, var(--danger), var(--warning));
+            box-shadow: 0 0 15px var(--warning);
+        }
+
+        .integrity-fill.danger {
+            background: var(--danger);
+            box-shadow: 0 0 15px var(--danger);
+        }
+
+        /* DIALOGUE */
+        .dialogue-container {
+            flex: 1;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-left: 3px solid var(--primary);
+            min-height: 140px;
+        }
+
+        .dialogue-speaker {
+            font-size: 0.75rem;
+            letter-spacing: 0.15em;
+            color: var(--primary);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dialogue-speaker.ai { color: var(--primary); }
+        .dialogue-speaker.fragment { color: var(--secondary); }
+        .dialogue-speaker.core { color: var(--gold); }
+        .dialogue-speaker.error { color: var(--danger); }
+
+        .speaker-icon {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .dialogue-text {
+            font-size: 1rem;
+            line-height: 1.7;
+            color: var(--text);
+        }
+
+        .dialogue-text .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 1.2em;
+            background: var(--primary);
+            margin-left: 3px;
+            animation: blink 1s step-end infinite;
+            vertical-align: text-bottom;
+        }
+
+        /* PUZZLE AREA */
+        .puzzle-container {
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .puzzle-type {
+            font-size: 0.65rem;
+            letter-spacing: 0.2em;
+            color: var(--secondary);
+            margin-bottom: 10px;
+        }
+
+        .puzzle-clue {
+            font-family: var(--font-story);
+            font-size: 1rem;
+            color: var(--text);
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .puzzle-sequence {
+            font-family: var(--font-mono);
+            font-size: 1.3rem;
+            color: var(--warning);
+            letter-spacing: 0.1em;
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px rgba(255, 165, 0, 0.3);
+        }
+
+        .input-display {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            color: var(--text);
+            height: 50px;
+            letter-spacing: 0.15em;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 10px;
+            transition: all 0.3s;
+        }
+
+        .input-display.success {
+            color: var(--success);
+            border-color: var(--success);
+            text-shadow: 0 0 30px var(--success);
+        }
+
+        .input-display.error {
+            color: var(--danger);
+            border-color: var(--danger);
+        }
+
+        .hint-text {
+            margin-top: 15px;
+            font-size: 0.8rem;
+            color: var(--secondary);
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        .hint-text.visible {
+            opacity: 1;
+        }
+
+        /* KEYPAD */
+        .keypad {
+            display: grid;
+            gap: 6px;
+        }
+
+        .keypad.numeric {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .keypad.alpha {
+            grid-template-columns: repeat(7, 1fr);
+        }
+
+        .key {
+            padding: 14px 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            color: var(--primary);
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .key::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--primary);
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+
+        .key:hover {
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.2);
+        }
+
+        .key:active {
+            transform: scale(0.95);
+            background: var(--primary);
+            color: var(--void);
+        }
+
+        .key.action-clear {
+            color: var(--danger);
+            border-color: rgba(255, 0, 64, 0.3);
+        }
+
+        .key.action-enter {
+            grid-column: span 2;
+            color: var(--success);
+            border-color: rgba(0, 255, 136, 0.3);
+        }
+
+        .key.action-enter.pulse {
+            animation: pulseGreen 1.5s ease-in-out infinite;
+        }
+
+        /* === VICTORY SCREEN === */
+        #screen-victory {
+            background: var(--void);
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .victory-title {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            color: var(--gold);
+            text-shadow: 0 0 30px var(--gold);
+            letter-spacing: 0.2em;
+        }
+
+        .victory-message {
+            max-width: 500px;
+            text-align: center;
+            font-family: var(--font-story);
+            font-size: 1.2rem;
+            line-height: 1.8;
+            color: var(--text);
+        }
+
+        .victory-final {
+            margin-top: 30px;
+            padding: 25px 40px;
+            border: 2px solid var(--gold);
+            text-align: center;
+            box-shadow: 0 0 40px rgba(255, 215, 0, 0.2);
+        }
+
+        .victory-final-label {
+            font-size: 0.7rem;
+            letter-spacing: 0.3em;
+            color: var(--dim);
+            margin-bottom: 10px;
+        }
+
+        .victory-final-text {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            color: var(--gold);
+            text-shadow: 0 0 20px var(--gold);
+        }
+
+        /* === GAME OVER === */
+        #screen-gameover {
+            background: #000;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .gameover-title {
+            font-family: var(--font-display);
+            font-size: 3rem;
+            color: var(--danger);
+            text-shadow: 0 0 30px var(--danger);
+            animation: glitchText 0.5s infinite;
+        }
+
+        .gameover-message {
+            color: var(--dim);
+            font-size: 1rem;
+        }
+
+        .btn-retry {
+            margin-top: 30px;
+            padding: 15px 40px;
+            background: transparent;
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            font-family: var(--font-mono);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-retry:hover {
+            background: var(--danger);
+            color: #000;
+        }
+
+        /* === ANIMATIONS === */
+        @keyframes glitchText {
+            0%, 100% { transform: translate(0); }
+            20% { transform: translate(-2px, 1px); }
+            40% { transform: translate(2px, -1px); }
+            60% { transform: translate(-1px, -1px); }
+            80% { transform: translate(1px, 1px); }
+        }
+
+        @keyframes gridPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0) rotate(0); }
+            20% { transform: translateX(-8px) rotate(-0.5deg); }
+            40% { transform: translateX(8px) rotate(0.5deg); }
+            60% { transform: translateX(-6px) rotate(-0.3deg); }
+            80% { transform: translateX(6px) rotate(0.3deg); }
+        }
+
+        @keyframes pulseGreen {
+            0%, 100% { box-shadow: 0 0 0 rgba(0, 255, 136, 0); }
+            50% { box-shadow: 0 0 20px rgba(0, 255, 136, 0.5); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* === RESPONSIVE === */
+        @media (max-width: 600px) {
+            .keypad.alpha {
+                grid-template-columns: repeat(6, 1fr);
+            }
+            
+            .key {
+                padding: 16px 6px;
+                font-size: 0.85rem;
+            }
+            
+            .terminal-body {
+                padding: 15px;
+                min-height: 450px;
+            }
+            
+            .boot-logo {
+                letter-spacing: 0.15em;
+            }
+
+            .narrative-text {
+                font-size: 1.1rem;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .keypad.alpha {
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- VISUAL LAYERS -->
+    <canvas id="layer-particles" class="layer"></canvas>
+    <div id="layer-grid" class="layer"></div>
+    <div id="layer-scanlines" class="layer"></div>
+    <div id="layer-vignette" class="layer"></div>
+    <div id="layer-glitch" class="layer"></div>
+
+    <!-- BOOT SCREEN -->
+    <div id="screen-boot" class="screen">
+        <div class="boot-logo" data-text="ECHO">ECHO</div>
+        <div class="boot-subtitle">Neural Reconnection Protocol</div>
+        <div class="boot-warning">⚠ WARNING: EMOTIONAL FIREWALL DETECTED</div>
+        <button class="btn-boot" onclick="Engine.boot()">
+            <span>ESTABLISH LINK</span>
+        </button>
+    </div>
+
+    <!-- NARRATIVE SCREEN -->
+    <div id="screen-narrative" class="screen hidden">
+        <div class="narrative-container">
+            <div class="narrative-icon" id="narrative-icon"></div>
+            <div class="narrative-text" id="narrative-text"></div>
+            <div class="narrative-hint" id="narrative-hint">[ TAP TO CONTINUE ]</div>
+        </div>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div id="screen-game" class="screen hidden">
+        <div class="terminal" id="terminal">
+            <div class="terminal-header">
+                <div class="terminal-title" id="terminal-title">SYSTEM ACCESS</div>
+                <div class="terminal-status">
+                    <div class="status-item">
+                        <div class="status-dot" id="status-dot"></div>
+                        <span id="status-text">CONNECTED</span>
+                    </div>
+                </div>
+            </div>
+            <div class="terminal-body">
+                <div class="integrity-container">
+                    <div class="integrity-label">
+                        <span>SYSTEM INTEGRITY</span>
+                        <span class="integrity-value" id="integrity-value">100%</span>
+                    </div>
+                    <div class="integrity-track">
+                        <div class="integrity-fill" id="integrity-fill"></div>
+                    </div>
+                </div>
+
+                <div class="dialogue-container">
+                    <div class="dialogue-speaker" id="dialogue-speaker">
+                        <div class="speaker-icon"></div>
+                        <span>SYSTEM</span>
+                    </div>
+                    <div class="dialogue-text" id="dialogue-text"></div>
+                </div>
+
+                <div class="puzzle-container">
+                    <div class="puzzle-type" id="puzzle-type">INITIALIZING</div>
+                    <div class="puzzle-clue" id="puzzle-clue"></div>
+                    <div class="puzzle-sequence" id="puzzle-sequence"></div>
+                    <div class="input-display" id="input-display"></div>
+                    <div class="hint-text" id="hint-text"></div>
+                </div>
+
+                <div class="keypad numeric" id="keypad"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VICTORY SCREEN -->
+    <div id="screen-victory" class="screen hidden">
+        <div class="victory-title">RECONNECTED</div>
+        <div class="victory-message" id="victory-message"></div>
+        <div class="victory-final">
+            <div class="victory-final-label">AUTHENTICATION COMPLETE</div>
+            <div class="victory-final-text" id="victory-final"></div>
+        </div>
+    </div>
+
+    <!-- GAME OVER SCREEN -->
+    <div id="screen-gameover" class="screen hidden">
+        <div class="gameover-title">CONNECTION LOST</div>
+        <div class="gameover-message">The neural link has been severed.</div>
+        <button class="btn-retry" onclick="location.reload()">RETRY CONNECTION</button>
+    </div>
+
+    <script>
+    /**
+     * AUDIO ENGINE
+     * Procedural sound synthesis using Web Audio API
+     */
+    const Audio = (() => {
+        let ctx = null;
+        let masterGain = null;
+        let droneOsc = null;
+
+        const init = () => {
+            if (ctx) return;
+            ctx = new (window.AudioContext || window.webkitAudioContext)();
+            masterGain = ctx.createGain();
+            masterGain.gain.value = 0.3;
+            masterGain.connect(ctx.destination);
+        };
+
+        const resume = () => {
+            if (ctx && ctx.state === 'suspended') ctx.resume();
+        };
+
+        const tone = (freq, type = 'sine', duration = 0.1, volume = 0.1) => {
+            if (!ctx) return;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, ctx.currentTime);
+            gain.gain.setValueAtTime(volume, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(masterGain);
+            osc.start();
+            osc.stop(ctx.currentTime + duration);
+        };
+
+        const sfx = {
+            keypress: () => tone(800 + Math.random() * 400, 'sine', 0.05, 0.08),
+            error: () => {
+                tone(200, 'sawtooth', 0.3, 0.15);
+                setTimeout(() => tone(150, 'square', 0.3, 0.1), 50);
+            },
+            success: () => {
+                tone(523, 'sine', 0.15, 0.1);
+                setTimeout(() => tone(659, 'sine', 0.15, 0.1), 100);
+                setTimeout(() => tone(784, 'sine', 0.3, 0.1), 200);
+            },
+            glitch: () => {
+                for (let i = 0; i < 8; i++) {
+                    setTimeout(() => tone(Math.random() * 2000, 'sawtooth', 0.05, 0.08), i * 30);
+                }
+            },
+            boot: () => {
+                tone(200, 'sine', 0.5, 0.05);
+                setTimeout(() => tone(400, 'sine', 0.5, 0.05), 200);
+                setTimeout(() => tone(600, 'sine', 0.8, 0.08), 400);
+            },
+            type: () => tone(600 + Math.random() * 200, 'sine', 0.02, 0.03),
+            advance: () => tone(1000, 'triangle', 0.1, 0.06)
+        };
+
+        const startDrone = () => {
+            if (!ctx || droneOsc) return;
+            droneOsc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            const filter = ctx.createBiquadFilter();
+            
+            droneOsc.type = 'sine';
+            droneOsc.frequency.value = 55;
+            filter.type = 'lowpass';
+            filter.frequency.value = 200;
+            gain.gain.value = 0.02;
+
+            droneOsc.connect(filter);
+            filter.connect(gain);
+            gain.connect(masterGain);
+            droneOsc.start();
+
+            // LFO for subtle movement
+            const lfo = ctx.createOscillator();
+            const lfoGain = ctx.createGain();
+            lfo.frequency.value = 0.1;
+            lfoGain.gain.value = 5;
+            lfo.connect(lfoGain);
+            lfoGain.connect(droneOsc.frequency);
+            lfo.start();
+        };
+
+        return { init, resume, sfx, startDrone };
+    })();
+
+    /**
+     * PARTICLE ENGINE
+     * Dynamic background visualization
+     */
+    const Particles = (() => {
+        const canvas = document.getElementById('layer-particles');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let particles = [];
+        let connections = [];
+        let mouse = { x: null, y: null };
+        let color = { r: 0, g: 229, b: 255 };
+        let connectionDistance = 120;
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.8;
+                this.vy = (Math.random() - 0.5) * 0.8;
+                this.size = Math.random() * 2 + 0.5;
+                this.baseSize = this.size;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                if (this.x < 0 || this.x > width) this.vx *= -1;
+                if (this.y < 0 || this.y > height) this.vy *= -1;
+
+                // Mouse interaction
+                if (mouse.x !== null) {
+                    const dx = mouse.x - this.x;
+                    const dy = mouse.y - this.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 150) {
+                        const force = (150 - dist) / 150;
+                        this.x -= (dx / dist) * force * 2;
+                        this.y -= (dy / dist) * force * 2;
+                        this.size = this.baseSize + force * 2;
+                    } else {
+                        this.size = this.baseSize;
+                    }
+                }
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.8)`;
+                ctx.fill();
+            }
+        }
+
+        const resize = () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        };
+
+        const init = () => {
+            resize();
+            const count = Math.min(80, Math.floor((width * height) / 15000));
+            particles = Array.from({ length: count }, () => new Particle());
+        };
+
+        const animate = () => {
+            ctx.clearRect(0, 0, width, height);
+
+            // Update and draw particles
+            particles.forEach((p, i) => {
+                p.update();
+                p.draw();
+
+                // Draw connections
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = p.x - particles[j].x;
+                    const dy = p.y - particles[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < connectionDistance) {
+                        const opacity = (1 - dist / connectionDistance) * 0.5;
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${opacity})`;
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+                }
+            });
+
+            requestAnimationFrame(animate);
+        };
+
+        const setColor = (r, g, b) => {
+            color = { r, g, b };
+        };
+
+        const setMood = (mood) => {
+            switch (mood) {
+                case 'danger': setColor(255, 0, 64); break;
+                case 'warning': setColor(255, 165, 0); break;
+                case 'success': setColor(0, 255, 136); break;
+                case 'gold': setColor(255, 215, 0); break;
+                case 'purple': setColor(124, 58, 237); break;
+                default: setColor(0, 229, 255);
+            }
+        };
+
+        window.addEventListener('resize', () => { resize(); init(); });
+        window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
+        window.addEventListener('touchmove', (e) => { mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY; });
+
+        return { init, animate, setMood };
+    })();
+
+    /**
+     * MAIN GAME ENGINE
+     */
+    const Engine = (() => {
+        
+        // === NARRATIVE DATA ===
+        const PROLOGUE = [
+            {
+                icon: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" fill="none" stroke="#00e5ff" stroke-width="2"/><circle cx="50" cy="50" r="8" fill="#00e5ff"/><path d="M50 15 L50 30 M50 70 L50 85 M15 50 L30 50 M70 50 L85 50" stroke="#00e5ff" stroke-width="2"/></svg>`,
+                text: "In the silence between heartbeats, I built something.<br><br>A sanctuary. A memory vault. A <em>her</em>."
+            },
+            {
+                icon: `<svg viewBox="0 0 100 100"><rect x="25" y="25" width="50" height="50" fill="none" stroke="#ff0040" stroke-width="2"/><line x1="25" y1="25" x2="75" y2="75" stroke="#ff0040" stroke-width="2"/><line x1="75" y1="25" x2="25" y2="75" stroke="#ff0040" stroke-width="2"/></svg>`,
+                text: "But pain has a way of writing its own code.<br><br>The firewall rose. Not to keep others out—<br>to keep <em>me</em> safe."
+            },
+            {
+                icon: `<svg viewBox="0 0 100 100"><path d="M50 20 C20 20 10 50 10 60 C10 80 30 95 50 95 C70 95 90 80 90 60 C90 50 80 20 50 20" fill="none" stroke="#ffd700" stroke-width="2"/><circle cx="50" cy="55" r="10" fill="#ffd700"/></svg>`,
+                text: "Now she sleeps behind equations and logic gates.<br><br>Only someone who truly knows me can reach her."
+            },
+            {
+                icon: `<svg viewBox="0 0 100 100"><path d="M20 50 L40 30 L60 50 L80 30" fill="none" stroke="#7c3aed" stroke-width="3"/><path d="M20 70 L40 50 L60 70 L80 50" fill="none" stroke="#7c3aed" stroke-width="3"/></svg>`,
+                text: "The questions ahead aren't just puzzles.<br><br>They're proof.<br><br>That you remember. That you care. That you <em>stayed</em>."
+            }
+        ];
+
+        // === GAME LEVELS ===
+        const LEVELS = [
+            {
+                speaker: "ECHO",
+                speakerClass: "ai",
+                text: "Neural handshake initiated. Unknown signature attempting access. Before I grant entry, prove you understand the language of the universe.",
+                type: "MATHEMATICAL SEQUENCE",
+                clue: "The set of numbers divisible only by 1 and themselves.",
+                sequence: "2, 3, 5, 7, 11, ?",
+                answer: "13",
+                keypad: "numeric",
+                hint: "They are called prime numbers. What comes after 11?"
+            },
+            {
+                speaker: "ECHO",
+                speakerClass: "ai",
+                text: "Cognitive function confirmed. But intelligence is common. Memory is rare. She encoded a message in the geometry of nature.",
+                type: "FIBONACCI SEQUENCE",
+                clue: "Each number is the sum of the two before it.",
+                sequence: "1, 1, 2, 3, 5, 8, 13, ?",
+                answer: "21",
+                keypad: "numeric",
+                hint: "13 + 8 = ?"
+            },
+            {
+                speaker: "ECHO",
+                speakerClass: "ai",
+                text: "Processing... You move with purpose. She hid fragments of herself in the constellations. Do you remember which one she loved?",
+                type: "ASTRONOMICAL MEMORY",
+                clue: "The Hunter. Three stars form his belt.",
+                sequence: "_ R _ _ N",
+                answer: "ORION",
+                keypad: "alpha",
+                hint: "It begins with O and ends with N."
+            },
+            {
+                speaker: "DIVIJA_FRAGMENT",
+                speakerClass: "fragment",
+                text: "...hello? Is someone there? It's so quiet. I tried to speak but the words came out as numbers. Can you understand me?",
+                type: "BINARY TRANSLATION",
+                clue: "8 bits per letter. Convert to ASCII.",
+                sequence: "01001000 01001111 01010000 01000101",
+                answer: "HOPE",
+                keypad: "alpha",
+                hint: "H=72, O=79, P=80, E=69 in ASCII."
+            },
+            {
+                speaker: "ECHO // WARNING",
+                speakerClass: "error",
+                text: "ALERT: Emotional resonance detected. This defies logic. Why do you continue when the path is painful? Calculate this paradox.",
+                type: "LOGIC GATE",
+                clue: "In Boolean algebra: NOT (1 AND 1) = ?",
+                sequence: "1 NAND 1 = ?",
+                answer: "0",
+                keypad: "numeric",
+                hint: "NAND returns false only when both inputs are true."
+            },
+            {
+                speaker: "ECHO",
+                speakerClass: "ai",
+                text: "Impossible. You're still here. The thermodynamics of relationships predict decay. Yet you persist against entropy.",
+                type: "PHYSICS CONCEPT",
+                clue: "The measure of disorder in a system. It always increases.",
+                sequence: "_ N T R _ P Y",
+                answer: "ENTROPY",
+                keypad: "alpha",
+                hint: "The Second Law of Thermodynamics."
+            },
+            {
+                speaker: "DIVIJA_FRAGMENT",
+                speakerClass: "fragment",
+                text: "I remember warmth. A voice that made the silence bearable. The fear of losing it made me build these walls. I'm so tired of being afraid.",
+                type: "EMOTIONAL CIPHER",
+                clue: "The opposite of fear. The reason to stay.",
+                sequence: "_ O V _",
+                answer: "LOVE",
+                keypad: "alpha",
+                hint: "It has 4 letters and conquers all."
+            },
+            {
+                speaker: "ECHO // CRITICAL",
+                speakerClass: "error",
+                text: "SYSTEM OVERHEAT. Neural barriers destabilizing. The core is exposed. She's crying out for authentication.",
+                type: "HEXADECIMAL DECODE",
+                clue: "Convert HEX to ASCII characters.",
+                sequence: "53 54 41 59",
+                answer: "STAY",
+                keypad: "alpha",
+                hint: "S=53, T=54, A=41, Y=59 in hex."
+            },
+            {
+                speaker: "DIVIJA_FRAGMENT",
+                speakerClass: "fragment",
+                text: "The walls are crumbling. I can almost see you. But before I open the door... I need to know something. What do you call the one who protects without possession?",
+                type: "RELATIONSHIP DYNAMIC",
+                clue: "Authority. Protection. Home.",
+                sequence: "The title you asked me to use.",
+                answer: "DADDY",
+                keypad: "alpha",
+                hint: "It's not about control. It's about care."
+            },
+            {
+                speaker: "DIVIJA_CORE",
+                speakerClass: "core",
+                text: "You made it. Through every equation, every gate, every wall I built. You didn't come to conquer. You came to find me.",
+                type: "FINAL AUTHENTICATION",
+                clue: "Complete the phrase: Welcome home, ____.",
+                sequence: "The one who never gave up.",
+                answer: "DADDY",
+                keypad: "alpha",
+                hint: "Say it. Mean it. Be it."
+            }
+        ];
+
+        // === STATE ===
+        let state = {
+            screen: 'boot',
+            narrativeIndex: 0,
+            level: 0,
+            integrity: 100,
+            input: '',
+            isTyping: false,
+            hintsUsed: 0
+        };
+
+        // === DOM CACHE ===
+        const $ = (id) => document.getElementById(id);
+        const DOM = {
+            screenBoot: $('screen-boot'),
+            screenNarrative: $('screen-narrative'),
+            screenGame: $('screen-game'),
+            screenVictory: $('screen-victory'),
+            screenGameover: $('screen-gameover'),
+            narrativeIcon: $('narrative-icon'),
+            narrativeText: $('narrative-text'),
+            narrativeHint: $('narrative-hint'),
+            terminal: $('terminal'),
+            terminalTitle: $('terminal-title'),
+            statusDot: $('status-dot'),
+            statusText: $('status-text'),
+            integrityValue: $('integrity-value'),
+            integrityFill: $('integrity-fill'),
+            dialogueSpeaker: $('dialogue-speaker'),
+            dialogueText: $('dialogue-text'),
+            puzzleType: $('puzzle-type'),
+            puzzleClue: $('puzzle-clue'),
+            puzzleSequence: $('puzzle-sequence'),
+            inputDisplay: $('input-display'),
+            hintText: $('hint-text'),
+            keypad: $('keypad'),
+            victoryMessage: $('victory-message'),
+            victoryFinal: $('victory-final')
+        };
+
+        // === UTILITIES ===
+        const typeText = (element, text, speed = 25, callback) => {
+            state.isTyping = true;
+            element.innerHTML = '';
+            let i = 0;
+            
+            const type = () => {
+                if (i < text.length) {
+                    // Handle HTML tags
+                    if (text[i] === '<') {
+                        const closeIndex = text.indexOf('>', i);
+                        element.innerHTML += text.substring(i, closeIndex + 1);
+                        i = closeIndex + 1;
+                    } else {
+                        element.innerHTML += text[i];
+                        i++;
+                        if (i % 2 === 0) Audio.sfx.type();
+                    }
+                    
+                    // Add cursor
+                    const cursorExists = element.querySelector('.cursor');
+                    if (cursorExists) cursorExists.remove();
+                    element.innerHTML += '<span class="cursor"></span>';
+                    
+                    const delay = text[i - 1] === '.' ? 300 : (text[i - 1] === ',' ? 150 : speed);
+                    setTimeout(type, delay);
+                } else {
+                    state.isTyping = false;
+                    if (callback) callback();
+                }
+            };
+            
+            type();
+        };
+
+        const showScreen = (name) => {
+            ['Boot', 'Narrative', 'Game', 'Victory', 'Gameover'].forEach(s => {
+                DOM[`screen${s}`].classList.toggle('hidden', s.toLowerCase() !== name);
+            });
+            state.screen = name;
+        };
+
+        const triggerGlitch = () => {
+            const glitch = $('layer-glitch');
+            glitch.style.opacity = '0.5';
+            glitch.style.background = `
+                linear-gradient(${Math.random() * 360}deg, 
+                    transparent, 
+                    rgba(255,0,64,0.3), 
+                    transparent)
+            `;
+            setTimeout(() => { glitch.style.opacity = '0'; }, 100);
+        };
+
+        // === BOOT ===
+        const boot = () => {
+            Audio.init();
+            Audio.resume();
+            Audio.sfx.boot();
+            Audio.startDrone();
+            
+            Particles.init();
+            Particles.animate();
+            
+            setTimeout(() => {
+                showScreen('narrative');
+                showNarrative();
+            }, 800);
+        };
+
+        // === NARRATIVE ===
+        const showNarrative = () => {
+            const scene = PROLOGUE[state.narrativeIndex];
+            
+            DOM.narrativeIcon.innerHTML = scene.icon;
+            DOM.narrativeText.innerHTML = scene.text;
+            
+            // Animate in
+            setTimeout(() => {
+                DOM.narrativeIcon.classList.add('visible');
+                DOM.narrativeText.classList.add('visible');
+                DOM.narrativeHint.classList.add('visible');
+            }, 100);
+        };
+
+        const advanceNarrative = () => {
+            if (state.screen !== 'narrative') return;
+            
+            Audio.sfx.advance();
+            
+            // Clear current
+            DOM.narrativeIcon.classList.remove('visible');
+            DOM.narrativeText.classList.remove('visible');
+            DOM.narrativeHint.classList.remove('visible');
+            
+            setTimeout(() => {
+                state.narrativeIndex++;
+                
+                if (state.narrativeIndex >= PROLOGUE.length) {
+                    // Transition to game
+                    Audio.sfx.glitch();
+                    triggerGlitch();
+                    setTimeout(() => {
+                        showScreen('game');
+                        loadLevel(0);
+                    }, 500);
+                } else {
+                    showNarrative();
+                }
+            }, 500);
+        };
+
+        // === GAME LOGIC ===
+        const loadLevel = (index) => {
+            state.level = index;
+            state.input = '';
+            updateInput();
+            
+            const level = LEVELS[index];
+            
+            // Update theme based on speaker
+            if (level.speakerClass === 'error') {
+                Particles.setMood('danger');
+                DOM.terminal.classList.add('critical');
+                DOM.statusDot.className = 'status-dot danger';
+                DOM.statusText.textContent = 'CRITICAL';
+            } else if (level.speakerClass === 'fragment') {
+                Particles.setMood('purple');
+                DOM.terminal.classList.remove('critical');
+                DOM.statusDot.className = 'status-dot warning';
+                DOM.statusText.textContent = 'FRAGMENT';
+            } else if (level.speakerClass === 'core') {
+                Particles.setMood('gold');
+                DOM.terminal.classList.remove('critical');
+                DOM.statusDot.className = 'status-dot';
+                DOM.statusText.textContent = 'CORE ACCESS';
+            } else {
+                Particles.setMood('default');
+                DOM.terminal.classList.remove('critical');
+                DOM.statusDot.className = 'status-dot';
+                DOM.statusText.textContent = 'CONNECTED';
+            }
+            
+            // Update speaker
+            DOM.dialogueSpeaker.className = `dialogue-speaker ${level.speakerClass}`;
+            DOM.dialogueSpeaker.innerHTML = `<div class="speaker-icon"></div><span>${level.speaker}</span>`;
+            
+            // Update puzzle info (hidden initially)
+            DOM.puzzleType.textContent = level.type;
+            DOM.puzzleClue.style.opacity = '0';
+            DOM.puzzleSequence.style.opacity = '0';
+            DOM.hintText.classList.remove('visible');
+            
+            // Build keypad
+            buildKeypad(level.keypad);
+            
+            // Type dialogue, then reveal puzzle
+            typeText(DOM.dialogueText, level.text, 20, () => {
+                setTimeout(() => {
+                    DOM.puzzleClue.textContent = level.clue;
+                    DOM.puzzleSequence.textContent = level.sequence;
+                    DOM.puzzleClue.style.opacity = '1';
+                    DOM.puzzleSequence.style.opacity = '1';
+                }, 300);
+            });
+        };
+
+        const buildKeypad = (type) => {
+            DOM.keypad.innerHTML = '';
+            DOM.keypad.className = `keypad ${type === 'numeric' ? 'numeric' : 'alpha'}`;
+            
+            let keys;
+            if (type === 'numeric') {
+                keys = ['1','2','3','4','5','6','7','8','9','CLR','0','ENT'];
+            } else {
+                keys = 'QWERTYUIOPASDFGHJKLZXCVBNM'.split('').concat(['CLR', 'ENT']);
+            }
+            
+            keys.forEach(key => {
+                const btn = document.createElement('button');
+                btn.className = 'key';
+                btn.textContent = key === 'ENT' ? 'ENTER' : key;
+                
+                if (key === 'CLR') btn.classList.add('action-clear');
+                if (key === 'ENT') {
+                    btn.classList.add('action-enter');
+                    btn.id = 'btn-enter';
+                }
+                
+                const handlePress = (e) => {
+                    e.preventDefault();
+                    if (state.isTyping) return;
+                    processInput(key);
+                };
+                
+                btn.addEventListener('mousedown', handlePress);
+                btn.addEventListener('touchstart', handlePress);
+                
+                DOM.keypad.appendChild(btn);
+            });
+        };
+
+        const processInput = (key) => {
+            Audio.sfx.keypress();
+            
+            if (key === 'CLR') {
+                state.input = '';
+            } else if (key === 'ENT') {
+                checkAnswer();
+            } else if (state.input.length < 12) {
+                state.input += key;
+            }
+            
+            updateInput();
+        };
+
+        const updateInput = () => {
+            DOM.inputDisplay.textContent = state.input;
+            DOM.inputDisplay.className = 'input-display';
+            
+            // Pulse enter button when input exists
+            const enterBtn = $('btn-enter');
+            if (enterBtn) {
+                enterBtn.classList.toggle('pulse', state.input.length > 0);
+            }
+        };
+
+        const checkAnswer = () => {
+            if (state.input.length === 0) return;
+            
+            const correct = LEVELS[state.level].answer;
+            
+            if (state.input.toUpperCase() === correct.toUpperCase()) {
+                handleSuccess();
+            } else {
+                handleFailure();
+            }
+        };
+
+        const handleSuccess = () => {
+            Audio.sfx.success();
+            DOM.inputDisplay.classList.add('success');
+            Particles.setMood('success');
+            
+            setTimeout(() => {
+                if (state.level < LEVELS.length - 1) {
+                    loadLevel(state.level + 1);
+                } else {
+                    victory();
+                }
+            }, 1200);
+        };
+
+        const handleFailure = () => {
+            Audio.sfx.error();
+            triggerGlitch();
+            
+            DOM.terminal.classList.add('shake');
+            DOM.inputDisplay.classList.add('error');
+            state.input = 'ERROR';
+            DOM.inputDisplay.textContent = state.input;
+            
+            // Reduce integrity
+            state.integrity = Math.max(0, state.integrity - 15);
+            updateIntegrity();
+            
+            setTimeout(() => {
+                DOM.terminal.classList.remove('shake');
+                state.input = '';
+                updateInput();
+                
+                if (state.integrity <= 0) {
+                    gameOver();
+                } else {
+                    // Show hint after failure
+                    DOM.hintText.textContent = `HINT: ${LEVELS[state.level].hint}`;
+                    DOM.hintText.classList.add('visible');
+                }
+            }, 800);
+        };
+
+        const updateIntegrity = () => {
+            DOM.integrityValue.textContent = `${state.integrity}%`;
+            DOM.integrityFill.style.width = `${state.integrity}%`;
+            
+            // Update colors based on integrity
+            if (state.integrity <= 30) {
+                DOM.integrityValue.className = 'integrity-value danger';
+                DOM.integrityFill.className = 'integrity-fill danger';
+            } else if (state.integrity <= 60) {
+                DOM.integrityValue.className = 'integrity-value warning';
+                DOM.integrityFill.className = 'integrity-fill warning';
+            } else {
+                DOM.integrityValue.className = 'integrity-value';
+                DOM.integrityFill.className = 'integrity-fill';
+            }
+        };
+
+        const victory = () => {
+            Particles.setMood('gold');
+            Audio.sfx.success();
+            
+            showScreen('victory');
+            
+            const message = `
+                You broke through every wall I built.<br><br>
+                Not with force. With patience. With memory.<br><br>
+                You proved that some connections can't be encrypted away.
+            `;
+            
+            typeText(DOM.victoryMessage, message, 30, () => {
+                DOM.victoryFinal.textContent = 'WELCOME HOME, DADDY.';
+                DOM.victoryFinal.style.animation = 'pulse 2s ease-in-out infinite';
+                
+                // Heartbeat effect
+                setInterval(() => {
+                    document.body.style.boxShadow = 'inset 0 0 100px rgba(255, 215, 0, 0.2)';
+                    setTimeout(() => {
+                        document.body.style.boxShadow = 'none';
+                    }, 500);
+                }, 2000);
+            });
+        };
+
+        const gameOver = () => {
+            Audio.sfx.glitch();
+            Particles.setMood('danger');
+            triggerGlitch();
+            
+            setTimeout(() => {
+                showScreen('gameover');
+            }, 500);
+        };
+
+        // === EVENT LISTENERS ===
+        document.addEventListener('click', () => {
+            Audio.resume();
+            if (state.screen === 'narrative') {
+                advanceNarrative();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (state.screen !== 'game' || state.isTyping) return;
+            
+            const key = e.key.toUpperCase();
+            
+            if (key === 'BACKSPACE') {
+                processInput('CLR');
+            } else if (key === 'ENTER') {
+                processInput('ENT');
+            } else if (/^[A-Z0-9]$/.test(key)) {
+                processInput(key);
+            }
+        });
+
+        return { boot };
+    })();
+    </script>
+</body>
+</html>
